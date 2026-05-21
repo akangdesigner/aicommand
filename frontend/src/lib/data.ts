@@ -1,0 +1,331 @@
+export type Sentiment = 'positive' | 'negative' | 'mixed'
+export type Category = '程式開發' | '寫作' | '圖像生成' | '自動化' | '語音'
+export type SortKey = 'hot' | 'rising' | 'discussed'
+
+export interface Quote {
+  text: string
+  source: string
+  sentiment: Sentiment
+  date: string
+}
+
+export interface Competitor {
+  name: string
+  count: number
+}
+
+export interface ToolSources {
+  reddit: number
+  hn: number
+  github: number
+  v2ex?: number
+  juejin?: number
+}
+
+export interface Tool {
+  rank: number
+  prevRank: number
+  slug: string
+  name: string
+  initials: string
+  accent: string
+  description: string
+  category: Category
+  score: number
+  delta: number
+  discussions: number
+  growth: string
+  sources: ToolSources
+  audiences: string[]
+  useCases: string[]
+  painPoints: string[]
+  pricingFeel: string
+  quotes: Quote[]
+  competitors: Competitor[]
+  trend: number[]
+}
+
+export interface SortOption {
+  id: SortKey
+  label: string
+}
+
+export const TOOLS: Tool[] = [
+  {
+    rank: 1, prevRank: 3, slug: 'cursor',
+    name: 'Cursor', initials: 'C', accent: 'oklch(0.55 0.18 265)',
+    description: '專為快速多檔編輯打造的 AI 程式編輯器',
+    category: '程式開發', score: 91.2, delta: 8.3,
+    discussions: 2847, growth: '本週 +34%',
+    sources: { reddit: 1284, hn: 412, github: 1151 },
+    audiences: ['個人開發者', '前端工程師', '獨立開發者', '新創 CTO'],
+    useCases: [
+      'React / Next.js 功能開發',
+      '透過 Composer 進行跨檔案重構',
+      '依現有程式碼產生測試套件',
+      '快速打造內部工具原型',
+    ],
+    painPoints: [
+      '$20/月 Pro 方案對業餘開發者偏貴',
+      '在 50 萬行以上的 monorepo 上 context 不夠用',
+      '長時間 agent 任務偶有延遲',
+      'TypeScript 環境下 Tab 補全偶爾過度建議',
+    ],
+    pricingFeel: '多數付費用戶認為 $20/月 Pro 方案以每日使用量來看絕對值得；$40/席次的 Business 方案則被 3–5 人小團隊抱怨——想要 SSO 就被推上 Enterprise 方案。',
+    quotes: [
+      { text: "Switched from VS Code three months ago. Composer alone saves me two hours a day on refactors. The $20 is the easiest expense I justify.", source: 'Reddit · r/webdev', sentiment: 'positive', date: '4 天前' },
+      { text: "Love the tool, but their Business plan pricing is aggressive. We're four devs and the per-seat math doesn't pencil out vs. Copilot.", source: 'Hacker News', sentiment: 'mixed', date: '1 週前' },
+      { text: "Agent mode is genuinely magical when it works. When it doesn't, you burn 200 tokens watching it loop on the same TypeScript error.", source: 'Reddit · r/programming', sentiment: 'mixed', date: '2 週前' },
+    ],
+    competitors: [
+      { name: 'GitHub Copilot', count: 312 },
+      { name: 'Windsurf', count: 187 },
+      { name: 'Zed', count: 94 },
+      { name: 'Continue.dev', count: 61 },
+    ],
+    trend: [58, 64, 68, 71, 75, 80, 86, 91.2],
+  },
+  {
+    rank: 2, prevRank: 4, slug: 'claude-code',
+    name: 'Claude Code', initials: 'CC', accent: 'oklch(0.62 0.14 35)',
+    description: '住在終端機裡的 agentic 程式助理',
+    category: '程式開發', score: 87.5, delta: 12.1,
+    discussions: 2104, growth: '本週 +58%',
+    sources: { reddit: 743, hn: 891, github: 470 },
+    audiences: ['後端工程師', 'DevOps / SRE', '開源維護者', '技術主管'],
+    useCases: [
+      '長時間跨檔案遷移與重構',
+      '從 CI log 的 stack trace 進行除錯',
+      '安全地撰寫並執行 shell script',
+      '產生 PR 描述與 changelog',
+    ],
+    painPoints: [
+      '純終端機工作流有學習門檻',
+      '預設沒有 commit 前的視覺化 diff',
+      'Pay-as-you-go 計費對個人開發者難預估',
+    ],
+    pricingFeel: 'Max 方案的重度使用者普遍認為一週內就能回本；按用量計費的使用者則抱怨 agent 跑長一點就一天燒掉 $40。',
+    quotes: [
+      { text: "Replaced three tools in my workflow. The fact that it just runs commands and reads files like a junior engineer is wild.", source: 'Hacker News', sentiment: 'positive', date: '2 天前' },
+      { text: "Burned $28 in one afternoon on a feature I could have written in 90 minutes. Use with a budget cap.", source: 'Reddit · r/programming', sentiment: 'negative', date: '5 天前' },
+    ],
+    competitors: [
+      { name: 'Cursor', count: 287 },
+      { name: 'Aider', count: 156 },
+      { name: 'OpenAI Codex CLI', count: 88 },
+    ],
+    trend: [42, 51, 58, 64, 68, 74, 82, 87.5],
+  },
+  {
+    rank: 3, prevRank: 2, slug: 'chatgpt',
+    name: 'ChatGPT', initials: 'GP', accent: 'oklch(0.6 0.13 165)',
+    description: '通用型 AI 助理，擅長寫作與思考',
+    category: '寫作', score: 83.0, delta: -0.2,
+    discussions: 4912, growth: '本週 −2%',
+    sources: { reddit: 3104, hn: 718, github: 1090 },
+    audiences: ['行銷人員', '學生', '產品經理', '一般使用者'],
+    useCases: ['長文草稿與大綱', '腦力激盪、重新框架問題', '研究與 PDF 摘要', '幫忙琢磨棘手的 email 或訊息'],
+    painPoints: ['模型選擇 UX 對一般使用者太複雜', '記憶功能在不同對話間不一致', '語音模式的可用性視地區而定'],
+    pricingFeel: '$20/月 的 Plus 已是整個產業比價的基準。$200/月 的 Pro 被視為「研究員等級」，多數人會跳過。',
+    quotes: [
+      { text: "Still my daily driver for everything that isn't coding. The voice mode on long walks is genuinely a new product category.", source: 'Reddit · r/ChatGPT', sentiment: 'positive', date: '3 天前' },
+      { text: "Falling behind on the developer side. I keep it open for writing but for code I'm fully on Claude now.", source: 'Hacker News', sentiment: 'negative', date: '1 週前' },
+    ],
+    competitors: [
+      { name: 'Claude', count: 421 },
+      { name: 'Gemini', count: 198 },
+      { name: 'Perplexity', count: 142 },
+    ],
+    trend: [86, 85, 84, 84, 83, 83, 83.2, 83.0],
+  },
+  {
+    rank: 4, prevRank: 1, slug: 'github-copilot',
+    name: 'GitHub Copilot', initials: 'GC', accent: 'oklch(0.52 0.04 250)',
+    description: '直接整合進你慣用 IDE 的 AI pair programmer',
+    category: '程式開發', score: 79.4, delta: -3.1,
+    discussions: 1840, growth: '本週 −8%',
+    sources: { reddit: 612, hn: 401, github: 827 },
+    audiences: ['企業開發者', 'Java / .NET 團隊', '受監管產業'],
+    useCases: ['JetBrains 與 VS Code 的行內自動補全', '產生樣板測試程式碼', '需要 SOC2 合規工具的企業環境'],
+    painPoints: ['Agentic 流程上明顯落後 Cursor', 'Chat 品質會依底層選用的模型而浮動', '大規模時 per-seat 計費膨脹很快'],
+    pricingFeel: '$10/月 Individual 是 r/programming 最常被提到的「合理價位」；$19/席次的 Business 則只換到聳肩。',
+    quotes: [
+      { text: "Still the safe enterprise pick. Procurement loves it. Devs are starting to ask for Cursor though.", source: 'Reddit · r/devops', sentiment: 'mixed', date: '6 天前' },
+    ],
+    competitors: [
+      { name: 'Cursor', count: 364 },
+      { name: 'Codeium', count: 142 },
+      { name: 'Tabnine', count: 71 },
+    ],
+    trend: [88, 86, 85, 84, 82, 80, 80.1, 79.4],
+  },
+  {
+    rank: 5, prevRank: 7, slug: 'perplexity',
+    name: 'Perplexity', initials: 'Px', accent: 'oklch(0.55 0.12 200)',
+    description: '附引用來源的 AI 搜尋引擎',
+    category: '寫作', score: 74.8, delta: 5.6,
+    discussions: 1342, growth: '本週 +19%',
+    sources: { reddit: 612, hn: 318, github: 412 },
+    audiences: ['研究員', '分析師', '做市場研究的創業者'],
+    useCases: ['附來源的快速 fact-check', '帶引文的比價研究', '取代 Google 的「X 是怎麼運作的」查詢'],
+    painPoints: ['Pro Search 點數消耗很快', 'Spaces UX 仍粗糙', '對非常新的新聞品質會掉'],
+    pricingFeel: '$20/月 Pro 是業界對它的標準期望。免費方案夠用，很多人從不升級。',
+    quotes: [
+      { text: "It's the only AI tool I've actually replaced a Google habit with. Citations matter more than I expected.", source: 'Reddit · r/productivity', sentiment: 'positive', date: '4 天前' },
+    ],
+    competitors: [
+      { name: 'ChatGPT Search', count: 184 },
+      { name: 'Google AI Overviews', count: 92 },
+    ],
+    trend: [60, 62, 65, 67, 69, 71, 73, 74.8],
+  },
+  {
+    rank: 6, prevRank: 6, slug: 'midjourney',
+    name: 'Midjourney', initials: 'MJ', accent: 'oklch(0.6 0.14 310)',
+    description: '具獨特風格的高品質生成式影像模型',
+    category: '圖像生成', score: 71.2, delta: 1.4,
+    discussions: 1928, growth: '本週 +4%',
+    sources: { reddit: 1284, hn: 142, github: 502 },
+    audiences: ['設計師', '品牌行銷', '概念設計師'],
+    useCases: ['moodboard 與視覺探索', '行銷素材產出', '遊戲開發的概念美術'],
+    painPoints: ['只能在 Discord 上用感覺過時', 'V7 的角色一致性仍不穩', '沒有可用於生產的真正 API'],
+    pricingFeel: '$10 Basic 玩玩可以；真的在用的創作者多半直接跳到 $30 Standard 拿 fast hours。',
+    quotes: [
+      { text: "Web app finally feels native. I haven't opened Discord in two months.", source: 'Reddit · r/midjourney', sentiment: 'positive', date: '1 週前' },
+    ],
+    competitors: [
+      { name: 'Flux', count: 218 },
+      { name: 'DALL·E', count: 94 },
+      { name: 'Ideogram', count: 71 },
+    ],
+    trend: [68, 69, 70, 70, 71, 71, 70.5, 71.2],
+  },
+  {
+    rank: 7, prevRank: 9, slug: 'v0',
+    name: 'v0', initials: 'v0', accent: 'oklch(0.3 0.02 250)',
+    description: 'Vercel 推出的 React / Tailwind 生成式 UI 工具',
+    category: '程式開發', score: 68.9, delta: 6.7,
+    discussions: 942, growth: '本週 +22%',
+    sources: { reddit: 218, hn: 412, github: 312 },
+    audiences: ['前端工程師', '會寫程式的設計師', 'Hackathon 團隊'],
+    useCases: ['Landing page 雛形', '快速生成 shadcn dashboard', '把 Figma 翻成可動的 React'],
+    painPoints: ['產出的程式碼需要再整理', '與 Vercel 生態綁定較深'],
+    pricingFeel: '免費額度大方。除非每月出多個網站，付費方案不好說服。',
+    quotes: [
+      { text: "For landing pages and internal tools I'm 3x faster. For real apps I still rewrite half of what it gives me.", source: 'Hacker News', sentiment: 'mixed', date: '5 天前' },
+    ],
+    competitors: [
+      { name: 'Bolt.new', count: 142 },
+      { name: 'Lovable', count: 88 },
+    ],
+    trend: [48, 52, 56, 60, 62, 64, 66, 68.9],
+  },
+  {
+    rank: 8, prevRank: 5, slug: 'notion-ai',
+    name: 'Notion AI', initials: 'N', accent: 'oklch(0.3 0.01 60)',
+    description: '直接內建在文件、wiki、資料庫中的 AI',
+    category: '寫作', score: 64.1, delta: -4.8,
+    discussions: 712, growth: '本週 −11%',
+    sources: { reddit: 312, hn: 124, github: 276 },
+    audiences: ['產品經理', '知識管理團隊', '營運主管'],
+    useCases: ['會議筆記摘要', '從敘述產生結構化資料庫欄位', '內部文件翻譯'],
+    painPoints: ['$10/成員 在大團隊累積很快', '純寫作品質落後 ChatGPT'],
+    pricingFeel: '已經付 Notion 的團隊勉強加購；很少人會單獨為它付錢。',
+    quotes: [
+      { text: "Convenient because it's already there. I never open it intentionally — it just helps when I'm stuck.", source: 'Reddit · r/Notion', sentiment: 'mixed', date: '3 天前' },
+    ],
+    competitors: [
+      { name: 'ChatGPT', count: 142 },
+      { name: 'Mem', count: 38 },
+    ],
+    trend: [72, 71, 70, 69, 68, 66, 65, 64.1],
+  },
+  {
+    rank: 9, prevRank: 8, slug: 'zapier-agents',
+    name: 'Zapier Agents', initials: 'Za', accent: 'oklch(0.62 0.16 35)',
+    description: '能在 6,000+ 個 App 上動作的自主 agent',
+    category: '自動化', score: 61.5, delta: -1.2,
+    discussions: 524, growth: '本週 −3%',
+    sources: { reddit: 184, hn: 142, github: 198 },
+    audiences: ['營運團隊', '個人創業者', '行銷營運'],
+    useCases: ['潛在客戶資料補全流程', '收件匣分類與分派', '帶條件分支的跨工具資料同步'],
+    painPoints: ['Agent 默默失敗時很難除錯', '鏈式 agent 任務常出現意外計費'],
+    pricingFeel: '既有 Zapier 用戶能直接吸收成本；新買家對 task 計費感到難以預估。',
+    quotes: [
+      { text: "When it works it replaces a junior ops hire. When it doesn't, you spend a Tuesday figuring out why.", source: 'Reddit · r/nocode', sentiment: 'mixed', date: '1 週前' },
+    ],
+    competitors: [
+      { name: 'n8n', count: 198 },
+      { name: 'Make', count: 124 },
+    ],
+    trend: [64, 63, 63, 62, 62, 62, 62.2, 61.5],
+  },
+  {
+    rank: 10, prevRank: 11, slug: 'replit-agent',
+    name: 'Replit Agent', initials: 'R', accent: 'oklch(0.55 0.16 30)',
+    description: '能在瀏覽器內建構並部署完整 App 的 agent',
+    category: '程式開發', score: 58.7, delta: 3.4,
+    discussions: 412, growth: '本週 +12%',
+    sources: { reddit: 184, hn: 94, github: 134 },
+    audiences: ['程式初學者', '做原型的 PM', '教育工作者'],
+    useCases: ['免本地環境快速做 MVP', '教初學者全端流程', '快速內部 demo'],
+    painPoints: ['產出的 App 上線前還要重構', '部署費用一開始不清楚'],
+    pricingFeel: 'Core 方案 $25/月 是甜蜜點；Agent checkpoint 用量容易暴衝。',
+    quotes: [
+      { text: "Shipped a working app in an afternoon with zero local setup. Wouldn't run my startup on it, but for demos? Incredible.", source: 'Hacker News', sentiment: 'positive', date: '4 天前' },
+    ],
+    competitors: [
+      { name: 'Bolt.new', count: 142 },
+      { name: 'v0', count: 98 },
+    ],
+    trend: [44, 47, 49, 52, 54, 56, 57, 58.7],
+  },
+  {
+    rank: 11, prevRank: 10, slug: 'gemini',
+    name: 'Gemini', initials: 'G', accent: 'oklch(0.6 0.14 240)',
+    description: 'Google 的旗艦多模態模型與助理',
+    category: '寫作', score: 55.4, delta: -0.9,
+    discussions: 1124, growth: '本週 −2%',
+    sources: { reddit: 612, hn: 218, github: 294 },
+    audiences: ['Google Workspace 使用者', 'Android 重度使用者', 'GCP 企業客戶'],
+    useCases: ['百萬 token 等級的長文分析', 'Gmail、Docs、Sheets 內建協作', '多模態影片理解'],
+    painPoints: ['Gemini App、Advanced、AI Studio 品牌定位混亂', 'Workspace 整合感覺像硬接上去'],
+    pricingFeel: '多數人是隨著 Workspace 訂閱拿到，單獨販售的價值感模糊。',
+    quotes: [
+      { text: "The 1M context is the only reason I keep it around. For everything else I default to Claude.", source: 'Reddit · r/Bard', sentiment: 'mixed', date: '5 天前' },
+    ],
+    competitors: [
+      { name: 'ChatGPT', count: 312 },
+      { name: 'Claude', count: 198 },
+    ],
+    trend: [60, 59, 58, 57, 56, 55, 56, 55.4],
+  },
+  {
+    rank: 12, prevRank: 12, slug: 'runway',
+    name: 'Runway', initials: 'Ru', accent: 'oklch(0.5 0.05 0)',
+    description: '面向專業創作者的生成式影片與視覺特效',
+    category: '圖像生成', score: 52.8, delta: 0.4,
+    discussions: 384, growth: '本週 +1%',
+    sources: { reddit: 142, hn: 88, github: 154 },
+    audiences: ['影片剪輯師', '獨立電影人', '廣告創意'],
+    useCases: ['為剪輯產出生成式 B-roll', '影片中的物件移除', '從分鏡探索鏡頭'],
+    painPoints: ['長鏡頭點數消耗很快', 'Gen-4 在手部與文字仍會崩'],
+    pricingFeel: '$15/月 Standard 是入門點；$35+ 的專業方案常被抱怨點數計算。',
+    quotes: [
+      { text: "It's part of my pipeline now alongside After Effects. Two years ago I'd have laughed at that.", source: 'Reddit · r/VideoEditing', sentiment: 'positive', date: '1 週前' },
+    ],
+    competitors: [
+      { name: 'Pika', count: 88 },
+      { name: 'Luma', count: 71 },
+    ],
+    trend: [52, 52, 53, 52, 52, 52, 52.5, 52.8],
+  },
+]
+
+export const CATEGORIES: string[] = ['全部', '程式開發', '寫作', '圖像生成', '自動化', '語音']
+
+export const SORTS: SortOption[] = [
+  { id: 'hot', label: '話題熱度' },
+  { id: 'rising', label: '本週上升' },
+  { id: 'discussed', label: '最多討論' },
+]
