@@ -16,10 +16,11 @@ from pipeline.schema import (
     normalize_tool_name,
 )
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "llama-3.1-8b-instant"
 MIN_CONTENT_LENGTH = 50
-CONCURRENCY = 5       # parallel requests
-RATE_LIMIT_DELAY = 2.5  # seconds between batches to stay under 30 req/min
+CONCURRENCY = 2        # 2 parallel requests → ~24 RPM safely under 30 RPM limit
+RATE_LIMIT_DELAY = 5.0  # seconds per worker → 2 workers × 12 req/min = 24 RPM
+MAX_RETRIES = 3
 
 
 @dataclass
@@ -73,30 +74,45 @@ def _parse_response(raw_mention_id: int, text: str) -> ExtractionResult:
 
 async def _extract_one(client: AsyncGroq, mention_id: int, content: str, semaphore: asyncio.Semaphore) -> ExtractionResult:
     async with semaphore:
-        try:
-            resp = await client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-                    {"role": "user", "content": EXTRACTION_USER_TEMPLATE.format(content=content[:2000])},
-                ],
-                max_tokens=512,
-                temperature=0.1,
-                response_format={"type": "json_object"},
-            )
-            text = resp.choices[0].message.content or ""
-            await asyncio.sleep(RATE_LIMIT_DELAY)
-            return _parse_response(mention_id, text)
-        except Exception as e:
-            await asyncio.sleep(RATE_LIMIT_DELAY)
-            return ExtractionResult(
-                raw_mention_id=mention_id,
-                tool_name=None, sentiment=None,
-                use_cases=[], pain_points=[], target_audience=[],
-                pricing_signal=None, comparisons=[],
-                confidence=0.0, raw_quote=None,
-                error=str(e),
-            )
+        for attempt in range(MAX_RETRIES):
+            try:
+                resp = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=[
+                        {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
+                        {"role": "user", "content": EXTRACTION_USER_TEMPLATE.format(content=content[:2000])},
+                    ],
+                    max_tokens=512,
+                    temperature=0.1,
+                    response_format={"type": "json_object"},
+                )
+                text = resp.choices[0].message.content or ""
+                await asyncio.sleep(RATE_LIMIT_DELAY)
+                return _parse_response(mention_id, text)
+            except Exception as e:
+                err = str(e)
+                if "429" in err or "rate_limit" in err.lower():
+                    wait = 30 * (attempt + 1)  # 30s, 60s, 90s
+                    print(f"  Rate limit hit, waiting {wait}s (attempt {attempt+1}/{MAX_RETRIES})...")
+                    await asyncio.sleep(wait)
+                    continue
+                await asyncio.sleep(RATE_LIMIT_DELAY)
+                return ExtractionResult(
+                    raw_mention_id=mention_id,
+                    tool_name=None, sentiment=None,
+                    use_cases=[], pain_points=[], target_audience=[],
+                    pricing_signal=None, comparisons=[],
+                    confidence=0.0, raw_quote=None,
+                    error=err,
+                )
+        return ExtractionResult(
+            raw_mention_id=mention_id,
+            tool_name=None, sentiment=None,
+            use_cases=[], pain_points=[], target_audience=[],
+            pricing_signal=None, comparisons=[],
+            confidence=0.0, raw_quote=None,
+            error="max retries exceeded",
+        )
 
 
 async def _run_async(mentions: list[dict]) -> list[ExtractionResult]:
