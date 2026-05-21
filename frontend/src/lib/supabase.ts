@@ -17,6 +17,14 @@ interface SupabaseTool {
   trend_delta: number
 }
 
+const CATEGORY_MAP: Record<string, Tool['category']> = {
+  coding:     '程式開發',
+  writing:    '寫作',
+  image:      '圖像生成',
+  automation: '自動化',
+  voice:      '語音',
+}
+
 function growthText(delta: number): string {
   if (delta > 5)  return `本週 +${delta.toFixed(0)}%`
   if (delta > 0)  return `本週 +${delta.toFixed(1)}`
@@ -31,8 +39,8 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
   const { data, error } = await supabase
     .from('tools')
     .select('slug, name, category, description, ranking_score, mention_count, trend_delta')
-    .gt('ranking_score', 0)
     .order('ranking_score', { ascending: false })
+    .order('mention_count', { ascending: false })
     .limit(50)
 
   if (error || !data || data.length === 0) return TOOLS
@@ -46,7 +54,7 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
       ...base,
       slug: row.slug,
       name: row.name,
-      category: (row.category as Tool['category']) || base.category,
+      category: CATEGORY_MAP[row.category] || base.category,
       description: row.description || base.description,
       rank: index + 1,
       prevRank: index + 1,
