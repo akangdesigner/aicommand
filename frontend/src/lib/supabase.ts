@@ -64,14 +64,22 @@ function makeBasicTool(row: SupabaseTool, rank: number): Tool {
 export async function getToolsForHomePage(): Promise<Tool[]> {
   if (!supabase) return TOOLS
 
-  const { data, error } = await supabase
-    .from('tools')
-    .select('slug, name, category, description, ranking_score, mention_count, trend_delta')
-    .order('ranking_score', { ascending: false })
-    .order('mention_count', { ascending: false })
-    .limit(50)
+  let data: SupabaseTool[] | null = null
+  try {
+    const res = await supabase
+      .from('tools')
+      .select('slug, name, category, description, ranking_score, mention_count, trend_delta')
+      .order('ranking_score', { ascending: false })
+      .order('mention_count', { ascending: false })
+      .limit(50)
+    if (res.error) throw res.error
+    data = res.data
+  } catch (err) {
+    console.error('[supabase] getToolsForHomePage error:', err)
+    return TOOLS
+  }
 
-  if (error || !data || data.length === 0) return TOOLS
+  if (!data || data.length === 0) return TOOLS
 
   const liveSlugs = new Set(data.map((r: SupabaseTool) => r.slug))
 
