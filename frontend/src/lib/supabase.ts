@@ -33,6 +33,34 @@ function growthText(delta: number): string {
   return '本週持平'
 }
 
+const ACCENT_HUES = [265, 35, 165, 310, 200, 30, 240, 140, 50, 0]
+
+function makeBasicTool(row: SupabaseTool, rank: number): Tool {
+  const hue = ACCENT_HUES[row.slug.charCodeAt(0) % ACCENT_HUES.length]
+  const base = Number(row.ranking_score)
+  return {
+    rank, prevRank: rank,
+    slug: row.slug,
+    name: row.name,
+    initials: row.name.slice(0, 2).toUpperCase(),
+    accent: `oklch(0.55 0.15 ${hue})`,
+    description: row.description || 'AI 工具',
+    category: CATEGORY_MAP[row.category] || '程式開發',
+    score: base,
+    delta: Number(row.trend_delta),
+    discussions: row.mention_count,
+    growth: growthText(Number(row.trend_delta)),
+    sources: { reddit: 0, hn: 0, github: row.mention_count },
+    audiences: [],
+    useCases: [],
+    painPoints: [],
+    pricingFeel: '社群洞察資料收集中，敬請期待。',
+    quotes: [],
+    competitors: [],
+    trend: [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1].map((f) => Number((base * f).toFixed(1))),
+  }
+}
+
 export async function getToolsForHomePage(): Promise<Tool[]> {
   if (!supabase) return TOOLS
 
@@ -49,7 +77,7 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
 
   const merged: Tool[] = data.map((row: SupabaseTool, index: number) => {
     const mock = TOOLS.find((t) => t.slug === row.slug)
-    const base = mock ?? TOOLS[0]
+    const base = mock ?? makeBasicTool(row, index + 1)
     return {
       ...base,
       slug: row.slug,
