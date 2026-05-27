@@ -1,7 +1,7 @@
 """
 AI extraction pipeline using Groq API.
-Uses async concurrent requests with rate limiting (30 req/min free tier).
-Model: llama-3.3-70b-versatile for quality extraction.
+Sequential batch processing — avoids thundering-herd 429 cascades.
+BATCH_SIZE=5 means 5x fewer API calls vs per-mention approach.
 """
 import asyncio
 import json
@@ -11,16 +11,16 @@ from dataclasses import dataclass
 from groq import AsyncGroq
 
 from pipeline.schema import (
-    EXTRACTION_SYSTEM_PROMPT,
-    EXTRACTION_USER_TEMPLATE,
+    EXTRACTION_BATCH_SYSTEM_PROMPT,
+    TARGET_TOOLS,
     normalize_tool_name,
 )
 
 MODEL = "llama-3.1-8b-instant"
 MIN_CONTENT_LENGTH = 50
-CONCURRENCY = 2        # 2 parallel requests → ~24 RPM safely under 30 RPM limit
-RATE_LIMIT_DELAY = 5.0  # seconds per worker → 2 workers × 12 req/min = 24 RPM
-MAX_RETRIES = 3
+BATCH_SIZE = 3    # smaller batches → fewer tokens per request → less likely to hit TPM limit
+RATE_LIMIT_DELAY = 15.0  # seconds between batches → 4 RPM, safe under 30 RPM limit
+MAX_RETRIES = 2
 
 
 @dataclass
@@ -35,118 +35,155 @@ class ExtractionResult:
     comparisons: list[dict]
     confidence: float
     raw_quote: str | None
+    content_type: str | None = None
+    source_url: str | None = None
+    source_author: str | None = None
+    source_platform: str | None = None
     model_used: str = MODEL
     error: str | None = None
 
 
-def _parse_response(raw_mention_id: int, text: str) -> ExtractionResult:
+def _empty(mention_id: int, error: str) -> ExtractionResult:
+    return ExtractionResult(
+        raw_mention_id=mention_id,
+        tool_name=None, sentiment=None,
+        use_cases=[], pain_points=[], target_audience=[],
+        pricing_signal=None, comparisons=[],
+        confidence=0.0, raw_quote=None,
+        error=error,
+    )
+
+
+def _parse_one_obj(mention_id: int, data: dict) -> ExtractionResult:
+    return ExtractionResult(
+        raw_mention_id=mention_id,
+        tool_name=normalize_tool_name(data.get("tool_name")),
+        sentiment=data.get("sentiment"),
+        use_cases=data.get("use_cases") or [],
+        pain_points=data.get("pain_points") or [],
+        target_audience=data.get("target_audience") or [],
+        pricing_signal=data.get("pricing_signal"),
+        comparisons=data.get("comparisons") or [],
+        confidence=float(data.get("confidence") or 0.5),
+        raw_quote=data.get("raw_quote"),
+        content_type=data.get("content_type"),
+    )
+
+
+def _parse_batch_response(mention_ids: list[int], text: str) -> list[ExtractionResult]:
     try:
-        # Strip markdown code blocks if present
         t = text.strip()
         if "```json" in t:
             t = t.split("```json")[1].split("```")[0].strip()
         elif "```" in t:
             t = t.split("```")[1].split("```")[0].strip()
-
-        data = json.loads(t)
-        return ExtractionResult(
-            raw_mention_id=raw_mention_id,
-            tool_name=normalize_tool_name(data.get("tool_name")),
-            sentiment=data.get("sentiment"),
-            use_cases=data.get("use_cases") or [],
-            pain_points=data.get("pain_points") or [],
-            target_audience=data.get("target_audience") or [],
-            pricing_signal=data.get("pricing_signal"),
-            comparisons=data.get("comparisons") or [],
-            confidence=float(data.get("confidence") or 0.5),
-            raw_quote=data.get("raw_quote"),
-        )
+        items = json.loads(t).get("results", [])
+        results = []
+        for i, mid in enumerate(mention_ids):
+            if i < len(items) and isinstance(items[i], dict):
+                results.append(_parse_one_obj(mid, items[i]))
+            else:
+                results.append(_empty(mid, "missing in batch response"))
+        return results
     except Exception as e:
-        return ExtractionResult(
-            raw_mention_id=raw_mention_id,
-            tool_name=None, sentiment=None,
-            use_cases=[], pain_points=[], target_audience=[],
-            pricing_signal=None, comparisons=[],
-            confidence=0.0, raw_quote=None,
-            error=str(e),
-        )
+        return [_empty(mid, str(e)) for mid in mention_ids]
 
 
-async def _extract_one(client: AsyncGroq, mention_id: int, content: str, semaphore: asyncio.Semaphore) -> ExtractionResult:
-    async with semaphore:
-        for attempt in range(MAX_RETRIES):
-            try:
-                resp = await client.chat.completions.create(
-                    model=MODEL,
-                    messages=[
-                        {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-                        {"role": "user", "content": EXTRACTION_USER_TEMPLATE.format(content=content[:2000])},
-                    ],
-                    max_tokens=512,
-                    temperature=0.1,
-                    response_format={"type": "json_object"},
-                )
-                text = resp.choices[0].message.content or ""
-                await asyncio.sleep(RATE_LIMIT_DELAY)
-                return _parse_response(mention_id, text)
-            except Exception as e:
-                err = str(e)
-                if "429" in err or "rate_limit" in err.lower():
-                    wait = 30 * (attempt + 1)  # 30s, 60s, 90s
-                    print(f"  Rate limit hit, waiting {wait}s (attempt {attempt+1}/{MAX_RETRIES})...")
-                    await asyncio.sleep(wait)
-                    continue
-                await asyncio.sleep(RATE_LIMIT_DELAY)
-                return ExtractionResult(
-                    raw_mention_id=mention_id,
-                    tool_name=None, sentiment=None,
-                    use_cases=[], pain_points=[], target_audience=[],
-                    pricing_signal=None, comparisons=[],
-                    confidence=0.0, raw_quote=None,
-                    error=err,
-                )
-        return ExtractionResult(
-            raw_mention_id=mention_id,
-            tool_name=None, sentiment=None,
-            use_cases=[], pain_points=[], target_audience=[],
-            pricing_signal=None, comparisons=[],
-            confidence=0.0, raw_quote=None,
-            error="max retries exceeded",
-        )
+def _build_batch_user_msg(batch: list[dict]) -> str:
+    blocks = "\n\n".join(f"[{i+1}]\n{m['content'][:1500]}" for i, m in enumerate(batch))
+    schema = (
+        '{"tool_name":"Claude Code"|"Cursor"|"Trae"|"Windsurf"|"Codex"|null,'
+        '"sentiment":"positive"|"negative"|"neutral"|"mixed"|null,'
+        '"use_cases":[],"pain_points":[],"target_audience":[],'
+        '"pricing_signal":null,"comparisons":[{"tool":str,"verdict":str}],'
+        '"confidence":0.0,"raw_quote":null}'
+    )
+    return (
+        f"以下 {len(batch)} 筆社群討論，請依序提取 AI 工具資訊：\n\n"
+        f"{blocks}\n\n"
+        f"Each item schema: {schema}\n"
+        f'Return: {{"results": [<{len(batch)} objects in order>]}}'
+    )
+
+
+async def _process_batch(client: AsyncGroq, batch: list[dict]) -> list[ExtractionResult]:
+    mention_ids = [m["id"] for m in batch]
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = await client.chat.completions.create(
+                model=MODEL,
+                messages=[
+                    {"role": "system", "content": EXTRACTION_BATCH_SYSTEM_PROMPT},
+                    {"role": "user", "content": _build_batch_user_msg(batch)},
+                ],
+                max_tokens=2048,
+                temperature=0.1,
+                response_format={"type": "json_object"},
+            )
+            text = resp.choices[0].message.content or ""
+            await asyncio.sleep(RATE_LIMIT_DELAY)
+            return _parse_batch_response(mention_ids, text)
+        except Exception as e:
+            err = str(e)
+            if "429" in err or "rate_limit" in err.lower():
+                backoff = 30 * (attempt + 1)
+                print(f"  Rate limit, waiting {backoff}s (attempt {attempt+1}/{MAX_RETRIES})")
+                await asyncio.sleep(backoff)
+            else:
+                print(f"  Error: {err[:100]}")
+                return [_empty(mid, err) for mid in mention_ids]
+
+    return [_empty(mid, "max retries exceeded") for mid in mention_ids]
 
 
 async def _run_async(mentions: list[dict]) -> list[ExtractionResult]:
     client = AsyncGroq(api_key=os.environ["GROQ_API_KEY"])
-    semaphore = asyncio.Semaphore(CONCURRENCY)
+    meta_lookup: dict[int, dict] = {m["id"]: m.get("metadata") or {} for m in mentions}
+    batches = [mentions[i:i + BATCH_SIZE] for i in range(0, len(mentions), BATCH_SIZE)]
+    total = len(batches)
 
-    tasks = [
-        _extract_one(client, m["id"], m["content"], semaphore)
-        for m in mentions
-    ]
+    all_results: list[ExtractionResult] = []
+    for i, batch in enumerate(batches, 1):
+        batch_results = await _process_batch(client, batch)
+        for result in batch_results:
+            meta = meta_lookup.get(result.raw_mention_id, {})
+            result.source_url = meta.get("url")
+            result.source_author = meta.get("author")
+            result.source_platform = meta.get("source") or meta.get("type")
+        all_results.extend(batch_results)
+        if i % 10 == 0 or i == total:
+            valid = sum(1 for r in all_results if r.tool_name and not r.error)
+            print(f"  Batches: {i}/{total} | mentions: {len(all_results)} | valid: {valid}")
 
-    results = []
-    total = len(tasks)
-    for i, coro in enumerate(asyncio.as_completed(tasks), 1):
-        result = await coro
-        results.append(result)
-        if i % 50 == 0:
-            valid = sum(1 for r in results if r.tool_name and not r.error)
-            print(f"  Progress: {i}/{total} | valid: {valid}")
-
-    return results
+    return all_results
 
 
 def run_batch_extraction(mentions: list[dict]) -> list[ExtractionResult]:
     """
     Extract structured insights from raw mentions using Groq.
-    mentions: list of {id: int, content: str}
+    mentions: list of {id: int, content: str, metadata: dict}
     """
     valid = [m for m in mentions if len(m.get("content", "")) >= MIN_CONTENT_LENGTH]
-    print(f"Extracting {len(valid)} mentions (filtered {len(mentions) - len(valid)} too short)...")
+    print(f"Extracting {len(valid)} mentions ({total_batches(len(valid))} batches × ~5s = ~{eta(len(valid))}min)...")
 
     results = asyncio.run(_run_async(valid))
 
-    good = [r for r in results if r.tool_name and r.confidence >= 0.4 and not r.error]
+    good = [
+        r for r in results
+        if r.tool_name in TARGET_TOOLS
+        and r.confidence >= 0.6
+        and not r.error
+        and r.content_type == "review"
+    ]
     errors = [r for r in results if r.error]
     print(f"Done: {len(good)} valid | {len(errors)} errors | {len(results) - len(good) - len(errors)} no-tool")
     return good
+
+
+def total_batches(n: int) -> int:
+    return (n + BATCH_SIZE - 1) // BATCH_SIZE
+
+
+def eta(n: int) -> int:
+    return round(total_batches(n) * RATE_LIMIT_DELAY / 60)

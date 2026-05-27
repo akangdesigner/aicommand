@@ -15,6 +15,10 @@ from pydantic import BaseModel
 from crawler.sources import reddit as reddit_crawler
 from crawler.sources import hackernews as hn_crawler
 from crawler.sources import github as github_crawler
+from crawler.sources import official as official_crawler
+from crawler.sources import ptt as ptt_crawler
+from crawler.sources import dcard as dcard_crawler
+from crawler.sources import threads as threads_crawler
 from pipeline.extractor import run_batch_extraction
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -71,6 +75,13 @@ app = FastAPI(title="AI Tool Discovery API", version="1.0.0")
 
 # ── Crawl Endpoints (called by n8n on schedule) ──────────────────────────────
 
+@app.post("/crawl/official")
+async def crawl_official(background_tasks: BackgroundTasks):
+    """Fetch official pages for all 5 target tools and save to tools.official_info."""
+    background_tasks.add_task(official_crawler.run_official_crawl)
+    return {"status": "started"}
+
+
 @app.post("/crawl/reddit")
 async def crawl_reddit(background_tasks: BackgroundTasks):
     """Trigger Reddit crawl + save to Supabase. Called by n8n every 6h."""
@@ -92,6 +103,27 @@ async def crawl_hn(background_tasks: BackgroundTasks):
     return {"status": "started", "source": "hn"}
 
 
+@app.post("/crawl/ptt")
+async def crawl_ptt(background_tasks: BackgroundTasks):
+    """Trigger PTT crawl + save to Supabase. Called by n8n daily."""
+    background_tasks.add_task(_crawl_and_save, "ptt")
+    return {"status": "started", "source": "ptt"}
+
+
+@app.post("/crawl/dcard")
+async def crawl_dcard(background_tasks: BackgroundTasks):
+    """Trigger Dcard crawl + save to Supabase. Called by n8n daily."""
+    background_tasks.add_task(_crawl_and_save, "dcard")
+    return {"status": "started", "source": "dcard"}
+
+
+@app.post("/crawl/threads")
+async def crawl_threads(background_tasks: BackgroundTasks):
+    """Trigger Threads crawl + save to Supabase. Called by n8n daily."""
+    background_tasks.add_task(_crawl_and_save, "threads")
+    return {"status": "started", "source": "threads"}
+
+
 async def _crawl_and_save(source: str) -> None:
     """Background task: crawl a source and save raw mentions to Supabase."""
     if source == "reddit":
@@ -100,6 +132,12 @@ async def _crawl_and_save(source: str) -> None:
         mentions = github_crawler.run_full_crawl()
     elif source == "hn":
         mentions = hn_crawler.run_full_crawl()
+    elif source == "ptt":
+        mentions = ptt_crawler.run_full_crawl()
+    elif source == "dcard":
+        mentions = dcard_crawler.run_full_crawl()
+    elif source == "threads":
+        mentions = threads_crawler.run_full_crawl()
     else:
         return
 
@@ -134,7 +172,7 @@ async def _extract_unprocessed() -> None:
         resp = await client.get(
             f"{SUPABASE_URL}/rest/v1/raw_mentions",
             params={
-                "select": "id,content",
+                "select": "id,content,source,metadata",
                 "id": "not.in.(select raw_mention_id from extracted_insights)",
                 "order": "crawled_at.desc",
                 "limit": "500",
@@ -163,6 +201,9 @@ async def _extract_unprocessed() -> None:
             "comparisons": r.comparisons,
             "confidence": r.confidence,
             "raw_quote": r.raw_quote,
+            "source_url": r.source_url,
+            "source_author": r.source_author,
+            "source_platform": r.source_platform,
             "model_used": r.model_used,
         }
         for r in results

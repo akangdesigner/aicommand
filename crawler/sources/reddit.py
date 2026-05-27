@@ -9,23 +9,24 @@ from typing import Generator
 
 import httpx
 
+from crawler.filter import is_genuine_review
+
 TARGET_SUBREDDITS = [
-    "ClaudeAI", "ChatGPT", "LocalLLaMA",
-    "MachineLearning", "programming", "webdev",
-    "artificial", "SideProject", "ExperiencedDevs",
+    "ClaudeAI", "cursor_ai", "LocalLLaMA",
+    "programming", "webdev", "ExperiencedDevs",
 ]
 
 SEARCH_QUERIES = [
-    "claude code review",
-    "cursor vs copilot",
-    "claude vs chatgpt developer",
-    "best AI coding tool",
-    "github copilot alternative",
-    "n8n automation review",
-    "windsurf cursor comparison",
-    "AI tool solo developer",
-    "bolt lovable comparison",
-    "perplexity vs chatgpt",
+    "claude code review experience",
+    "cursor IDE review 2025",
+    "trae AI IDE review",
+    "windsurf codeium review",
+    "openai codex agent 2025",
+    "claude code vs cursor",
+    "windsurf vs cursor comparison",
+    "codex vs claude code",
+    "trae vs cursor",
+    "trae IDE experience",
 ]
 
 BASE_URL = "https://www.reddit.com"
@@ -33,8 +34,8 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; ai-tool-discovery/1.0; research bot)"
 }
 
-MIN_POST_SCORE = 5
-MIN_COMMENT_SCORE = 3
+MIN_POST_SCORE = 10
+MIN_COMMENT_SCORE = 5
 RATE_LIMIT_DELAY = 3.0  # seconds between requests
 
 
@@ -78,7 +79,7 @@ def _parse_post(post_data: dict) -> RawMention | None:
         body = ""
 
     content = f"{title}\n\n{body}".strip() if body else title
-    if len(content) < 30:
+    if len(content) < 30 or not is_genuine_review(content):
         return None
 
     return RawMention(
@@ -131,6 +132,8 @@ def crawl_comments(client: httpx.Client, post_id: str, subreddit: str, post_titl
             continue
 
         content = f"[Post: {post_title}]\n\n{body}"
+        if not is_genuine_review(content):
+            continue
         yield RawMention(
             source_id=f"reddit_comment_{d['id']}",
             content=content,

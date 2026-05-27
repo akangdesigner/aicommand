@@ -2,16 +2,33 @@ import { createClient } from '@supabase/supabase-js'
 import type { Tool } from '@/lib/data'
 import { TOOLS } from '@/lib/data'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+export interface RecentDiscussion {
+  toolName: string
+  text: string
+  source: string
+  author?: string
+  url?: string
+  sentiment: 'positive' | 'negative' | 'mixed'
+  date: string
+}
 
-export const supabase = url && anonKey ? createClient(url, anonKey) : null
+function getClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  // Server-side: prefer service key (bypasses RLS). Client-side: falls back to anon key.
+  const key = process.env.SUPABASE_SERVICE_KEY
+    ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ?? ''
+  if (!url || !key) return null
+  return createClient(url, key)
+}
 
 interface SupabaseTool {
   slug: string
   name: string
   category: string
   description: string
+  official_url: string | null
+  logo_url: string | null
   ranking_score: number
   mention_count: number
   trend_delta: number
@@ -33,45 +50,20 @@ function growthText(delta: number): string {
   return '本週持平'
 }
 
-const ACCENT_HUES = [265, 35, 165, 310, 200, 30, 240, 140, 50, 0]
-
-function makeBasicTool(row: SupabaseTool, rank: number): Tool {
-  const hue = ACCENT_HUES[row.slug.charCodeAt(0) % ACCENT_HUES.length]
-  const base = Number(row.ranking_score)
-  return {
-    rank, prevRank: rank,
-    slug: row.slug,
-    name: row.name,
-    initials: row.name.slice(0, 2).toUpperCase(),
-    accent: `oklch(0.55 0.15 ${hue})`,
-    description: row.description || 'AI 工具',
-    category: CATEGORY_MAP[row.category] || '程式開發',
-    score: base,
-    delta: Number(row.trend_delta),
-    discussions: row.mention_count,
-    growth: growthText(Number(row.trend_delta)),
-    sources: { reddit: 0, hn: 0, github: row.mention_count },
-    audiences: [],
-    useCases: [],
-    painPoints: [],
-    pricingFeel: '社群洞察資料收集中，敬請期待。',
-    quotes: [],
-    competitors: [],
-    trend: [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1].map((f) => Number((base * f).toFixed(1))),
-  }
-}
-
 export async function getToolsForHomePage(): Promise<Tool[]> {
+  const supabase = getClient()
   if (!supabase) return TOOLS
+
+  const allowedSlugs = TOOLS.map((t) => t.slug)
 
   let data: SupabaseTool[] | null = null
   try {
     const res = await supabase
       .from('tools')
-      .select('slug, name, category, description, ranking_score, mention_count, trend_delta')
+      .select('slug, name, category, description, official_url, logo_url, ranking_score, mention_count, trend_delta')
+      .in('slug', allowedSlugs)
       .order('ranking_score', { ascending: false })
       .order('mention_count', { ascending: false })
-      .limit(50)
     if (res.error) throw res.error
     data = res.data
   } catch (err) {
@@ -82,29 +74,95 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
   if (!data || data.length === 0) return TOOLS
 
   const liveSlugs = new Set(data.map((r: SupabaseTool) => r.slug))
+  const maxRaw = Math.max(...data.map((r) => Number(r.ranking_score)).filter(Boolean), 1)
+  const norm = (raw: number) => Math.round((raw / maxRaw) * 100 * 10) / 10
 
   const merged: Tool[] = data.map((row: SupabaseTool, index: number) => {
-    const mock = TOOLS.find((t) => t.slug === row.slug)
-    const base = mock ?? makeBasicTool(row, index + 1)
+    const config = TOOLS.find((t) => t.slug === row.slug)
+    const score = norm(Number(row.ranking_score))
+    const delta = Number(row.trend_delta)
     return {
-      ...base,
-      slug: row.slug,
-      name: row.name,
-      category: CATEGORY_MAP[row.category] || base.category,
-      description: row.description || base.description,
       rank: index + 1,
       prevRank: index + 1,
-      score: Number(row.ranking_score),
-      discussions: row.mention_count,
-      delta: Number(row.trend_delta),
-      growth: growthText(Number(row.trend_delta)),
+      slug: row.slug,
+      name: row.name,
+      initials: config?.initials ?? row.name.slice(0, 2).toUpperCase(),
+      accent: config?.accent ?? 'oklch(0.55 0.15 240)',
+      description: config?.description || row.description || '',
+      category: CATEGORY_MAP[row.category] ?? config?.category ?? '程式開發',
+      score,
+      delta,
+      discussions: Number(row.mention_count),
+      growth: growthText(delta),
+      sources: { reddit: 0, hn: 0, github: 0 },
+      audiences: [],
+      useCases: [],
+      painPoints: [],
+      pricingFeel: '',
+      quotes: [],
+      competitors: [],
+      trend: [],
+      website: row.official_url ?? config?.website,
+      logo_url: row.logo_url ?? config?.logo_url,
     }
   })
 
-  // 還沒進 Supabase 的工具排在最後（顯示 mock 資料）
+  // 還沒進 Supabase 的工具排在最後
   const extras = TOOLS
     .filter((t) => !liveSlugs.has(t.slug))
     .map((t, i) => ({ ...t, rank: merged.length + i + 1, prevRank: merged.length + i + 1 }))
 
   return [...merged, ...extras]
+}
+
+const TOOL_TERMS = ['Claude Code', 'Cursor', 'Windsurf', 'Trae', 'Codex']
+
+function sourcePlatformLabel(source: string): string {
+  if (source === 'github') return 'GitHub'
+  if (source === 'hn') return 'Hacker News'
+  if (source === 'ptt') return 'PTT'
+  if (source === 'dcard') return 'Dcard'
+  if (source === 'v2ex') return 'V2EX'
+  if (source === 'juejin') return '掘金'
+  return 'Reddit'
+}
+
+export async function getRecentDiscussions(limit = 24): Promise<RecentDiscussion[]> {
+  const supabase = getClient()
+  if (!supabase) return []
+
+  try {
+    const filter = TOOL_TERMS.map((t) => `content.ilike.*${t}*`).join(',')
+    const { data, error } = await supabase
+      .from('raw_mentions')
+      .select('id, content, source, metadata, crawled_at')
+      .or(filter)
+      .order('crawled_at', { ascending: false })
+      .limit(limit)
+
+    if (error || !data) return []
+
+    return data
+      .filter((r) => (r.content?.length ?? 0) > 60)
+      .map((r) => {
+        const meta = (r.metadata ?? {}) as Record<string, unknown>
+        const content = r.content as string
+        const toolName = TOOL_TERMS.find((t) => content.toLowerCase().includes(t.toLowerCase())) ?? ''
+        const text = content.replace(/\[.*?\]\n?/g, '').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220)
+        return {
+          toolName,
+          text,
+          source: sourcePlatformLabel(r.source as string),
+          author: ((meta.author ?? meta.username ?? meta.login) as string) || undefined,
+          url: (meta.url as string) || undefined,
+          sentiment: 'mixed' as const,
+          date: r.crawled_at
+            ? new Date(r.crawled_at as string).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
+            : '',
+        }
+      })
+  } catch (err) {
+    console.error('[supabase] getRecentDiscussions error:', err)
+    return []
+  }
 }

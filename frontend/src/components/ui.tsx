@@ -11,12 +11,36 @@ export function ToolLogo({ tool, size = 'md' }: { tool: Tool; size?: 'sm' | 'md'
     lg: 'h-16 w-16 text-[22px]',
     xl: 'h-20 w-20 text-[26px]',
   }[size]
+  const imgSize = { sm: 36, md: 44, lg: 64, xl: 80 }[size]
   return (
     <div
-      className={cx(dims, 'flex shrink-0 items-center justify-center rounded-[10px] font-semibold text-white tracking-tight')}
-      style={{ background: tool.accent, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(15,15,15,0.08)' }}
+      className={cx(dims, 'flex shrink-0 items-center justify-center rounded-[10px] font-semibold text-white tracking-tight overflow-hidden')}
+      style={{
+        background: tool.logo_url ? '#fff' : tool.accent,
+        border: tool.logo_url ? '1px solid oklch(0.92 0.005 80)' : 'none',
+        boxShadow: '0 1px 2px rgba(15,15,15,0.08)',
+      }}
     >
-      {tool.initials}
+      {tool.logo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={tool.logo_url}
+          alt={tool.name}
+          width={imgSize}
+          height={imgSize}
+          className="h-[75%] w-[75%] object-contain"
+          onError={(e) => {
+            const el = e.currentTarget
+            el.style.display = 'none'
+            const parent = el.parentElement!
+            parent.style.background = tool.accent
+            parent.style.border = 'none'
+            parent.textContent = tool.initials
+          }}
+        />
+      ) : (
+        tool.initials
+      )}
     </div>
   )
 }
@@ -76,6 +100,7 @@ export function Sparkline({
 }) {
   const uid = useId().replace(/:/g, '')
   const gradientId = `spark-fill-${uid}`
+  if (data.length < 2) return <svg width={width} height={height} />
   const min  = Math.min(...data)
   const max  = Math.max(...data)
   const range = max - min || 1

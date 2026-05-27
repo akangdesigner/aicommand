@@ -1,9 +1,17 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Noto_Sans_TC } from 'next/font/google'
+import { Noto_Sans_TC, Source_Serif_4 } from 'next/font/google'
 import { TopNav } from '@/components/TopNav'
 import './globals.css'
+
+const sourceSerif4 = Source_Serif_4({
+  subsets: ['latin'],
+  style: ['italic'],
+  weight: ['400'],
+  variable: '--font-source-serif',
+  display: 'swap',
+})
 
 const notoSansTC = Noto_Sans_TC({
   subsets: ['latin'],
@@ -19,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-TW" className={`${GeistSans.variable} ${GeistMono.variable} ${notoSansTC.variable}`}>
+    <html lang="zh-TW" className={`${GeistSans.variable} ${GeistMono.variable} ${notoSansTC.variable} ${sourceSerif4.variable}`}>
       <body className="min-h-screen bg-[#FBFBF9] text-stone-900">
         <TopNav />
         {children}

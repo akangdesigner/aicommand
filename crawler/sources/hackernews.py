@@ -9,6 +9,8 @@ from typing import Generator
 
 import httpx
 
+from crawler.filter import is_genuine_review
+
 ALGOLIA_BASE = "https://hn.algolia.com/api/v1"
 MIN_POINTS = 5
 MIN_COMMENT_LENGTH = 80
@@ -63,7 +65,7 @@ def search_hn(query: str, tags: str = "story,comment", days_back: int = 30) -> G
             title = html.unescape(hit.get("title") or "")
             text = html.unescape(hit.get("story_text") or "")
             content = f"{title}\n\n{text}".strip()
-            if not content or hit.get("points", 0) < MIN_POINTS:
+            if not content or hit.get("points", 0) < MIN_POINTS or not is_genuine_review(content):
                 continue
             yield RawMention(
                 source_id=f"hn_story_{hit['objectID']}",
@@ -82,9 +84,9 @@ def search_hn(query: str, tags: str = "story,comment", days_back: int = 30) -> G
 
         elif is_comment:
             text = html.unescape(hit.get("comment_text") or "")
-            if len(text) < MIN_COMMENT_LENGTH:
-                continue
             content = text.strip()
+            if len(content) < MIN_COMMENT_LENGTH or not is_genuine_review(content):
+                continue
             yield RawMention(
                 source_id=f"hn_comment_{hit['objectID']}",
                 content=content,
