@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Tool, Quote, SentimentBreakdown } from '@/lib/data'
 import { cx } from '@/lib/utils'
 import { ToolLogo, CategoryBadge, TrendArrow, ScoreNumber, SourceBar } from '@/components/ui'
+import { ReviewForm } from '@/components/ReviewForm'
 
 function TrendChart({ data, accent }: { data: number[]; accent: string }) {
   const uid = useId().replace(/:/g, '')
@@ -604,6 +605,13 @@ export function DetailPageClient({ tool, allTools }: { tool: Tool; allTools: Too
 
       {/* Quotes */}
       <QuotesSection quotes={tool.quotes} />
+
+      {/* 用戶留言 */}
+      <section className="mb-8 rounded-2xl border border-stone-200 bg-white p-5">
+        <h2 className="mb-1 text-[15px] font-semibold tracking-[-0.01em] text-stone-900">分享你的使用心得</h2>
+        <p className="mb-4 text-[12px] text-stone-400">你的評論將出現在社群討論區，來源顯示為「本站」</p>
+        <ReviewForm toolSlug={tool.slug} toolName={tool.name} />
+      </section>
 
       {/* Trend chart + comparisons */}
       {(tool.trend.length >= 2 || tool.competitors.length > 0) && (

@@ -36,14 +36,16 @@ function DiscussionCard({ d }: { d: RecentDiscussion }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://www.google.com/s2/favicons?domain=${d.source === 'hn' ? 'news.ycombinator.com' : d.source + '.com'}&sz=32`}
-            width={12}
-            height={12}
-            alt=""
-            className="h-3 w-3 object-contain opacity-60"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-          />
+          {d.source === '本站' ? (
+            <span className="rounded-full bg-stone-800 px-1.5 py-0.5 text-[9px] font-medium text-white">本站</span>
+          ) : (
+            <img
+              src={`https://www.google.com/s2/favicons?domain=${d.source === 'hn' ? 'news.ycombinator.com' : d.source + '.com'}&sz=32`}
+              width={12} height={12} alt=""
+              className="h-3 w-3 object-contain opacity-60"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+            />
+          )}
           <span className="font-mono text-[10.5px] text-stone-400">{label}</span>
         </div>
         <span className="max-w-[120px] truncate text-[11.5px] font-semibold tracking-[-0.01em] text-stone-700">

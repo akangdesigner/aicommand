@@ -179,18 +179,26 @@ export async function getRecentDiscussions(limit = 24): Promise<RecentDiscussion
   if (!supabase) return []
 
   try {
+    const half = Math.floor(limit / 2)
     const filter = TOOL_TERMS.map((t) => `content.ilike.*${t}*`).join(',')
-    const { data, error } = await supabase
-      .from('raw_mentions')
-      .select('id, content, source, metadata, crawled_at')
-      .or(filter)
-      .order('crawled_at', { ascending: false })
-      .limit(limit)
 
-    if (error || !data) return []
+    const [mentionsRes, reviewsRes] = await Promise.all([
+      supabase
+        .from('raw_mentions')
+        .select('id, content, source, metadata, crawled_at')
+        .or(filter)
+        .order('crawled_at', { ascending: false })
+        .limit(limit),
+      supabase
+        .from('user_reviews')
+        .select('id, tool_name, content, sentiment, author_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(half),
+    ])
 
-    return data
+    const crawled: RecentDiscussion[] = (mentionsRes.data ?? [])
       .filter((r) => (r.content?.length ?? 0) > 60)
+      .slice(0, limit - (reviewsRes.data?.length ?? 0))
       .map((r) => {
         const meta = (r.metadata ?? {}) as Record<string, unknown>
         const content = r.content as string
@@ -208,6 +216,24 @@ export async function getRecentDiscussions(limit = 24): Promise<RecentDiscussion
             : '',
         }
       })
+
+    const userReviews: RecentDiscussion[] = (reviewsRes.data ?? []).map((r) => ({
+      toolName: r.tool_name,
+      text: (r.content as string).slice(0, 220),
+      source: '本站',
+      author: r.author_name ?? undefined,
+      sentiment: (r.sentiment ?? 'mixed') as RecentDiscussion['sentiment'],
+      date: new Date(r.created_at).toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }),
+    }))
+
+    // 交錯排列：本站評論穿插在社群討論中
+    const merged: RecentDiscussion[] = []
+    let ci = 0, ui = 0
+    while (merged.length < limit && (ci < crawled.length || ui < userReviews.length)) {
+      if (ci < crawled.length) merged.push(crawled[ci++])
+      if (ui < userReviews.length) merged.push(userReviews[ui++])
+    }
+    return merged
   } catch (err) {
     console.error('[supabase] getRecentDiscussions error:', err)
     return []
