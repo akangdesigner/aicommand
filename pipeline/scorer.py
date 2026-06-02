@@ -65,12 +65,14 @@ def get_distinct_tool_names() -> list[str]:
 def upsert_tool(name: str) -> None:
     slug = TARGET_TOOL_SLUGS.get(name, name.lower().replace(' ', '-').replace('/', '-').replace('.', '-'))
     cat  = KNOWN_CATEGORIES.get(name, 'other')
-    httpx.post(
+    r = httpx.post(
         f'{URL}/rest/v1/tools',
         json={'slug': slug, 'name': name, 'category': cat},
-        headers={**HEADERS, 'Prefer': 'resolution=ignore-duplicates,return=minimal'},
+        headers={**HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal'},
         timeout=10,
     )
+    if r.status_code >= 400:
+        print(f'  [warn] upsert_tool {name!r} failed {r.status_code}: {r.text[:120]}')
 
 
 def rescore(name: str) -> float:
