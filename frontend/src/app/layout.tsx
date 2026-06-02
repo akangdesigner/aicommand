@@ -21,7 +21,7 @@ const notoSansTC = Noto_Sans_TC({
   display: 'swap',
 })
 
-const BASE_URL = 'https://aicommand.app'
+const BASE_URL = 'https://aicommand.aiqkangber.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

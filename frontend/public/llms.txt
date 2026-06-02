@@ -32,13 +32,13 @@ score = mentions^0.8 × sentiment_weight × (1 + 0.5 × recent_ratio)
 ## 聯絡
 
 - Email: asdtodd42@gmail.com
-- 網站: https://aicommand.app
+- 網站: https://aicommand.aiqkangber.com
 
 ## 頁面索引
 
-- 首頁（排行榜）: https://aicommand.app/
-- 最新動態: https://aicommand.app/news
-- 名詞大補帖: https://aicommand.app/glossary
-- 常見問題: https://aicommand.app/faq
-- 關於本站: https://aicommand.app/about
-- Sitemap: https://aicommand.app/sitemap.xml
+- 首頁（排行榜）: https://aicommand.aiqkangber.com/
+- 最新動態: https://aicommand.aiqkangber.com/news
+- 名詞大補帖: https://aicommand.aiqkangber.com/glossary
+- 常見問題: https://aicommand.aiqkangber.com/faq
+- 關於本站: https://aicommand.aiqkangber.com/about
+- Sitemap: https://aicommand.aiqkangber.com/sitemap.xml

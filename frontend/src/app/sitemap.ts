@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
-const BASE = 'https://aicommand.app'
+const BASE = 'https://aicommand.aiqkangber.com'
 
 async function getToolSlugs(): Promise<string[]> {
   try {

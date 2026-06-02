@@ -58,7 +58,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const config = TOOLS.find((t) => t.slug === params.slug)
-  const base = 'https://aicommand.app'
+  const base = 'https://aicommand.aiqkangber.com'
 
   if (config) return {
     title: `${config.name} 評測、評價、社群口碑`,

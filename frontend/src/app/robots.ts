@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/'],
       },
     ],
-    sitemap: 'https://aicommand.app/sitemap.xml',
+    sitemap: 'https://aicommand.aiqkangber.com/sitemap.xml',
   }
 }

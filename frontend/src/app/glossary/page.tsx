@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: '名詞大補帖 · AICommand AI 工具術語指南',
     description: 'AI 工具常見術語，從工作方式到定價模式，一次看懂。共 35 個詞條。',
   },
-  alternates: { canonical: 'https://aicommand.app/glossary' },
+  alternates: { canonical: 'https://aicommand.aiqkangber.com/glossary' },
 }
 
 export default function GlossaryPage() {
@@ -20,14 +20,14 @@ export default function GlossaryPage() {
     '@type': 'DefinedTermSet',
     name: 'AICommand AI 工具名詞大補帖',
     description: 'AI 開發工具常見術語指南，涵蓋工作方式、工具類型、AI 概念、主流模型、定價模式與工具選型六大分類。',
-    url: 'https://aicommand.app/glossary',
+    url: 'https://aicommand.aiqkangber.com/glossary',
     definedTerm: allEntries.map((e) => ({
       '@type': 'DefinedTerm',
       name: e.term,
       description: e.body,
       termCode: e.id,
-      inDefinedTermSet: 'https://aicommand.app/glossary',
-      url: `https://aicommand.app/glossary#${e.id}`,
+      inDefinedTermSet: 'https://aicommand.aiqkangber.com/glossary',
+      url: `https://aicommand.aiqkangber.com/glossary#${e.id}`,
     })),
   }
 
