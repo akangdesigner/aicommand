@@ -40,63 +40,68 @@ def _hash(text: str) -> str:
 def search_keyword(client: httpx.Client, token: str, keyword: str) -> list[RawMention]:
     mentions: list[RawMention] = []
     seen: set[str] = set()
+    after: str | None = None
 
-    try:
-        resp = client.get(
-            f"{API_BASE}/keyword_search",
-            params={
-                "q": keyword,
-                "search_type": "RECENT",
-                "limit": 100,
-                "fields": FIELDS,
-                "access_token": token,
-            },
-            timeout=20,
-        )
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
-    except Exception as e:
-        print(f"  Threads API error [{keyword}]: {e}")
-        return []
+    for _page in range(5):  # 最多翻 5 頁
+        params: dict = {
+            "q": keyword,
+            "search_type": "RECENT",
+            "limit": 50,
+            "fields": FIELDS,
+            "access_token": token,
+        }
+        if after:
+            params["after"] = after
 
-    for post in data:
-        post_id = post.get("id", "")
-        text = (post.get("text") or "").strip()
-        permalink = post.get("permalink", "")
-        timestamp = post.get("timestamp", "")
-        username = post.get("username", "")
+        try:
+            resp = client.get(f"{API_BASE}/keyword_search", params=params, timeout=20)
+            resp.raise_for_status()
+            body = resp.json()
+            data = body.get("data", [])
+            after = body.get("paging", {}).get("cursors", {}).get("after")
+        except Exception as e:
+            print(f"  Threads API error [{keyword}]: {e}")
+            break
 
-        if not text or len(text) < 20:
-            continue
-        if post_id in seen:
-            continue
+        for post in data:
+            post_id = post.get("id", "")
+            text = (post.get("text") or "").strip()
+            permalink = post.get("permalink", "")
+            timestamp = post.get("timestamp", "")
+            username = post.get("username", "")
 
-        # Date filter
-        if timestamp:
-            try:
-                dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                if dt < THREE_MONTHS_AGO:
-                    continue
-            except Exception:
-                pass
+            if not text or len(text) < 20 or post_id in seen:
+                continue
 
-        if not is_genuine_review(text):
-            continue
+            if timestamp:
+                try:
+                    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                    if dt < THREE_MONTHS_AGO:
+                        continue
+                except Exception:
+                    pass
 
-        seen.add(post_id)
-        mentions.append(RawMention(
-            source_id=f"threads_{post_id}",
-            content=text,
-            metadata={
-                "title": text[:60],
-                "author": username,
-                "url": permalink,
-                "created_at": timestamp,
-                "source": "threads",
-                "type": "post",
-            },
-            content_hash=_hash(text),
-        ))
+            # Threads 貼文本來就短，不用 is_genuine_review 的長度門檻
+            if not is_genuine_review(text, min_len=30):
+                continue
+
+            seen.add(post_id)
+            mentions.append(RawMention(
+                source_id=f"threads_{post_id}",
+                content=text,
+                metadata={
+                    "title": text[:60],
+                    "author": username,
+                    "url": permalink,
+                    "created_at": timestamp,
+                    "source": "threads",
+                    "type": "post",
+                },
+                content_hash=_hash(text),
+            ))
+
+        if not after or not data:
+            break
 
     return mentions
 

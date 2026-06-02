@@ -25,12 +25,12 @@ _NOISE = [
 _NOISE_RE = [re.compile(p) for p in _NOISE]
 
 
-def is_genuine_review(text: str) -> bool:
+def is_genuine_review(text: str, min_len: int = 80) -> bool:
     """
     Returns False if the text is likely a help request, bug report,
     tutorial, or GitHub issue rather than a genuine user opinion.
     """
-    if len(text) < 80:
+    if len(text) < min_len:
         return False
     # Only scan the first 400 characters to judge intent
     head = text[:400]
