@@ -31,15 +31,21 @@ export function TopNav() {
           </Link>
           <Link
             href="/glossary"
-            className="rounded-full border border-stone-200 px-3.5 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
+            className="hidden sm:inline-flex rounded-full border border-stone-200 px-3.5 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
           >
             名詞解釋
           </Link>
           <Link
             href="/faq"
-            className="rounded-full border border-stone-200 px-3.5 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
+            className="hidden sm:inline-flex rounded-full border border-stone-200 px-3.5 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
           >
             FAQ
+          </Link>
+          <Link
+            href="/about"
+            className="rounded-full border border-stone-200 px-3.5 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
+          >
+            關於
           </Link>
         </div>
       </div>

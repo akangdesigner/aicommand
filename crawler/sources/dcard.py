@@ -12,7 +12,11 @@ from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 from crawler.filter import is_genuine_review
 
 SEARCH_URL = "https://www.dcard.tw/search?query={keyword}&tab=post"
-KEYWORDS = ["Claude Code", "Cursor", "Windsurf", "Trae", "Codex"]
+KEYWORDS = [
+    "Claude Code", "Cursor", "Windsurf", "Trae", "Codex",
+    "n8n", "Zapier", "make.com", "Dify",
+    "Midjourney", "可靈", "ChatGPT", "Notion AI",
+]
 THREE_MONTHS_AGO = datetime.now(timezone.utc) - timedelta(days=90)
 DATE_RE = re.compile(r"^(\d{2}/\d{1,2}/\d{1,2}|\d{1,2}/\d{1,2})$")
 

@@ -100,7 +100,15 @@ export function Sparkline({
 }) {
   const uid = useId().replace(/:/g, '')
   const gradientId = `spark-fill-${uid}`
-  if (data.length < 2) return <svg width={width} height={height} />
+  if (data.length < 2) {
+    const y = height / 2
+    return (
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <line x1={0} y1={y} x2={width} y2={y}
+          stroke="oklch(0.88 0.005 80)" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round" />
+      </svg>
+    )
+  }
   const min  = Math.min(...data)
   const max  = Math.max(...data)
   const range = max - min || 1

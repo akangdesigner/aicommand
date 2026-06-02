@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 BASE_URL = "https://ithelp.ithome.com.tw/search"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
-KEYWORDS = ["Claude Code", "Cursor", "Windsurf", "Trae", "Codex"]
+KEYWORDS = ["Claude Code", "Cursor", "Windsurf", "Trae", "Codex", "n8n", "Zapier", "Dify"]
 TABS = ["question", "article"]
 PAGES_PER_SEARCH = 3
 RATE_LIMIT_DELAY = 1.0

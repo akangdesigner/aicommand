@@ -4,8 +4,8 @@ Defines the structured output format for community mention analysis.
 """
 from typing import Literal
 
-# 只追蹤這 5 款工具，其他一律過濾掉
-TARGET_TOOLS: set[str] = {"Claude Code", "Cursor", "Trae", "Windsurf", "Codex"}
+# 追蹤的工具清單
+TARGET_TOOLS: set[str] = {"Claude Code", "Cursor", "Trae", "Windsurf", "Codex", "n8n", "Make", "Zapier", "Dify"}
 
 EXTRACTION_SYSTEM_PROMPT = """You are an AI tool analyst. Extract structured information from community discussions about AI tools.
 
@@ -21,7 +21,7 @@ Output language rules (STRICTLY follow):
 
 Extraction rules:
 - Only extract information explicitly stated or strongly implied in the text
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex — or null if none match
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify — or null if none match
 - If multiple target tools are discussed, pick the PRIMARY one being reviewed/compared
 - Keep use_cases and pain_points concise (max 10 Chinese characters each item)
 - If the text does not discuss one of the 5 target tools, return tool_name as null
@@ -35,7 +35,7 @@ EXTRACTION_USER_TEMPLATE = """分析以下社群討論，提取關於 AI 工具�
 
 Return JSON matching this exact schema:
 {{
-  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | null,
+  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | "n8n" | "Make" | "Zapier" | "Dify" | null,
   "sentiment": "positive" | "negative" | "neutral" | "mixed" | null,
   "use_cases": string[],
   "pain_points": string[],
@@ -68,6 +68,20 @@ TOOL_NAME_ALIASES: dict[str, str] = {
     "trae ide": "Trae",
     "trae ai": "Trae",
     "trae editor": "Trae",
+    # n8n
+    "n8n.io": "n8n",
+    "n8n workflow": "n8n",
+    "n8n automation": "n8n",
+    # Make
+    "make.com": "Make",
+    "integromat": "Make",
+    "make automation": "Make",
+    # Zapier
+    "zapier automation": "Zapier",
+    "zapier workflow": "Zapier",
+    # Dify
+    "dify.ai": "Dify",
+    "dify llm": "Dify",
 }
 
 
@@ -94,11 +108,21 @@ IMPORTANT rules for non-review content:
 - raw_quote MUST be a first-person opinion ("I find...", "I've been using...", "我覺得...", "用了之後...").
   NEVER extract questions, bug descriptions, or third-person descriptions as raw_quote.
 
+TOOL DISAMBIGUATION:
+- "Make" refers ONLY to the automation platform Make.com (formerly Integromat). Do NOT extract tool_name "Make" just because the English word "make" appears in the text. Only set tool_name "Make" when the text clearly discusses Make.com as an automation tool — e.g. mentions "make.com", "integromat", "Make scenario", "Make workflow", or explicitly names it as a no-code automation tool alongside Zapier/n8n.
+
 Rules:
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex — or null
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify — or null
 - confidence 0.9+ = very clear signal that this is a genuine review with clear sentiment
 
 Return exactly: {"results": [ <N extraction objects in order> ]}"""
+
+
+_MAKE_CONTEXT_SIGNALS = {
+    'make.com', 'integromat', 'make scenario', 'make workflow',
+    'make automation', 'make module', 'make template', 'make.com/',
+    'make zapier', 'zapier make', 'n8n make', 'make n8n',
+}
 
 
 def normalize_tool_name(name: str | None) -> str | None:
@@ -108,3 +132,11 @@ def normalize_tool_name(name: str | None) -> str | None:
     resolved = TOOL_NAME_ALIASES.get(normalized.lower(), normalized)
     # 只回傳白名單內的工具名稱
     return resolved if resolved in TARGET_TOOLS else None
+
+
+def validate_make_context(tool_name: str | None, content: str) -> bool:
+    """Return False if tool_name is Make but content lacks Make.com context signals."""
+    if tool_name != 'Make':
+        return True
+    low = content.lower()
+    return any(signal in low for signal in _MAKE_CONTEXT_SIGNALS)

@@ -25,19 +25,27 @@ async function groqSearch(query: string): Promise<{ slug: string; name: string; 
 
   const ctx = TOOLS.map((t) => [
     `【${t.name}】slug=${t.slug}`,
-    `描述：${t.description}`,
+    `定位：${t.description}`,
     `定價：${t.pricingDescription ?? '未知'}`,
-    `特性：${(t.features ?? []).slice(0, 4).join('；')}`,
+    `核心功能：${(t.features ?? []).slice(0, 6).join('；')}`,
   ].join('\n')).join('\n\n')
 
-  const prompt = `你是 AICommand 推薦引擎。以下是 5 款 AI 程式開發工具：
+  const prompt = `你是 AICommand 推薦引擎，根據社群真實討論資料推薦 AI 工具。以下是 ${TOOLS.length} 款工具：
 
 ${ctx}
 
 用戶需求：「${query}」
 
-從這 5 款中找出最符合的 1-3 款（只推真正符合的，沒有就空陣列）。以 JSON 格式回覆：
-{"results":[{"slug":"工具slug","name":"工具名稱","reason":"一句話說明符合原因（繁體中文，25字內）","highlights":["具體符合點","具體符合點"]}]}
+任務：從上述工具中選出最符合此需求的 1-3 款。
+
+要求：
+- reason 必須直接回答「為什麼這款工具符合『${query}』這個需求」，不能只是重複工具描述
+- 若需求涉及比較（最好、最便宜、最適合某情境），reason 要說明相對優勢
+- highlights 列出 2 個與需求最直接相關的具體功能或特點
+- 沒有完全符合的工具就回空陣列，不要硬推
+
+JSON 格式：
+{"results":[{"slug":"工具slug","name":"工具名稱","reason":"針對需求的推薦理由（繁體中文，40字內）","highlights":["具體符合點1","具體符合點2"]}]}
 
 只回覆 JSON。`
 
@@ -49,6 +57,7 @@ ${ctx}
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
       max_tokens: 600,
+      response_format: { type: 'json_object' },
     }),
   })
 

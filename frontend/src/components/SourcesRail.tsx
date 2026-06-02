@@ -18,6 +18,7 @@ function SourceChip({ s }: { s: typeof SOURCES[0] }) {
   return (
     <div className="flex shrink-0 items-center gap-3 rounded-full border border-stone-200 bg-white py-1.5 pl-1.5 pr-4">
       <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-stone-100 ring-1 ring-stone-200">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={s.icon}
           alt={`${s.name} logo`}

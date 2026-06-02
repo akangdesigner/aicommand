@@ -18,7 +18,11 @@ HEADERS = {
     "Cookie": "over18=1",
 }
 
-KEYWORDS = ["Claude Code", "Cursor", "Windsurf", "Trae", "Codex"]
+KEYWORDS = [
+    "Claude Code", "Cursor", "Windsurf", "Trae", "Codex",
+    "n8n", "Zapier", "make.com", "Dify",
+    "Midjourney", "可靈", "ChatGPT", "Notion AI",
+]
 BOARDS = ["Soft_Job", "C_Chat", "Programming"]
 PAGES_PER_SEARCH = 3
 RATE_LIMIT_DELAY = 1.5

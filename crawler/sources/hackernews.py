@@ -16,9 +16,24 @@ MIN_POINTS = 5
 MIN_COMMENT_LENGTH = 80
 
 HN_QUERIES = [
+    # 程式開發
     "Claude AI", "Claude Code", "Cursor IDE", "GitHub Copilot",
-    "ChatGPT developer", "LLM coding", "AI coding tool",
-    "n8n automation", "AI tool comparison",
+    "LLM coding", "AI coding tool", "vibe coding",
+    "n8n automation", "n8n workflow",
+    "Zapier automation", "Dify LLM",
+    "make.com workflow", "make.com automation", "make.com vs zapier",
+    # 圖像生成
+    "Midjourney AI image", "Midjourney v7",
+    "ComfyUI workflow", "ComfyUI stable diffusion",
+    "Adobe Firefly", "Ideogram AI text",
+    "Leonardo AI image", "GPT Image OpenAI",
+    # 影片生成
+    "Kling AI video", "Seedance ByteDance video",
+    "AI video generation 2025",
+    # 寫作
+    "ChatGPT writing", "Notion AI", "Perplexity AI search",
+    "Grammarly AI", "Jasper AI writing", "Copy.ai marketing",
+    "AI writing tool comparison",
 ]
 
 

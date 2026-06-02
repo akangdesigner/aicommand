@@ -19,6 +19,7 @@ SEARCH_KEYWORDS = [
     "Claude", "Cursor编辑器", "ChatGPT", "AI编程工具",
     "GitHub Copilot", "n8n", "Windsurf", "AI工具推荐",
     "大模型", "LLM应用", "AI自动化", "Midjourney",
+    "Zapier", "make.com", "Dify", "工作流自动化",
 ]
 
 AI_KEYWORDS = [

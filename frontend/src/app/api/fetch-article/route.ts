@@ -95,7 +95,7 @@ function extractContent(html: string, pageUrl: string) {
     cleaned.match(/<div[^>]+(?:class|id)="[^"]*(?:article[-_]?(?:body|content|text)|post[-_]?(?:body|content)|entry[-_]?content|story[-_]?body|news[-_]?content)[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ??
     cleaned
 
-  const paragraphs = [...contentBlock.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
+  const paragraphs = Array.from(contentBlock.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi))
     .map(m => decodeEntities(m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()))
     .filter(p => p.length > 25)
     .slice(0, 35)

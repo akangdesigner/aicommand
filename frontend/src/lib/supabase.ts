@@ -19,7 +19,11 @@ function getClient() {
     ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ?? ''
   if (!url || !key) return null
-  return createClient(url, key)
+  return createClient(url, key, {
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
+  })
 }
 
 interface SupabaseTool {
@@ -29,7 +33,7 @@ interface SupabaseTool {
   description: string
   official_url: string | null
   logo_url: string | null
-  ranking_score: number
+  heat_score: number
   mention_count: number
   trend_delta: number
 }
@@ -55,17 +59,28 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
   if (!supabase) return TOOLS
 
   const allowedSlugs = TOOLS.map((t) => t.slug)
+  const allowedNames = TOOLS.map((t) => t.name)
 
   let data: SupabaseTool[] | null = null
+  let weeklyRows: { tool_name: string; week: string; mention_count: number }[] = []
+
   try {
-    const res = await supabase
-      .from('tools')
-      .select('slug, name, category, description, official_url, logo_url, ranking_score, mention_count, trend_delta')
-      .in('slug', allowedSlugs)
-      .order('ranking_score', { ascending: false })
-      .order('mention_count', { ascending: false })
-    if (res.error) throw res.error
-    data = res.data
+    const [toolsRes, trendsRes] = await Promise.all([
+      supabase
+        .from('tools')
+        .select('slug, name, category, description, official_url, logo_url, heat_score, mention_count, trend_delta')
+        .in('slug', allowedSlugs)
+        .order('heat_score', { ascending: false })
+        .order('mention_count', { ascending: false }),
+      supabase
+        .from('tool_weekly_trends')
+        .select('tool_name, week, mention_count')
+        .in('tool_name', allowedNames)
+        .order('week', { ascending: true }),
+    ])
+    if (toolsRes.error) throw toolsRes.error
+    data = toolsRes.data
+    weeklyRows = (trendsRes.data ?? []) as typeof weeklyRows
   } catch (err) {
     console.error('[supabase] getToolsForHomePage error:', err)
     return TOOLS
@@ -73,14 +88,37 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
 
   if (!data || data.length === 0) return TOOLS
 
+  // Build per-tool sparkline: fill missing weeks with 0 so gaps are visible
+  const weeklyByName: Record<string, { week: string; count: number }[]> = {}
+  for (const row of weeklyRows) {
+    if (!weeklyByName[row.tool_name]) weeklyByName[row.tool_name] = []
+    weeklyByName[row.tool_name].push({ week: row.week, count: Number(row.mention_count) })
+  }
+  function buildTrend(entries: { week: string; count: number }[]): number[] {
+    if (entries.length < 2) return [2, 2]
+    const sorted = [...entries].sort((a, b) => a.week.localeCompare(b.week))
+    // Fill missing weeks between first and last with 0
+    const filled: number[] = []
+    let cur = new Date(sorted[0].week)
+    const last = new Date(sorted[sorted.length - 1].week)
+    const byWeek = new Map(sorted.map((e) => [e.week, e.count]))
+    while (cur <= last) {
+      const key = cur.toISOString().slice(0, 10)
+      filled.push(byWeek.get(key) ?? 0)
+      cur = new Date(cur.getTime() + 7 * 24 * 60 * 60 * 1000)
+    }
+    if (filled.length < 3) return [2, 2]
+    const mx = Math.max(...filled) || 1
+    return filled.map((c) => Math.round((c / mx) * 100 * 10) / 10)
+  }
+
   const liveSlugs = new Set(data.map((r: SupabaseTool) => r.slug))
-  const maxRaw = Math.max(...data.map((r) => Number(r.ranking_score)).filter(Boolean), 1)
-  const norm = (raw: number) => Math.round((raw / maxRaw) * 100 * 10) / 10
 
   const merged: Tool[] = data.map((row: SupabaseTool, index: number) => {
     const config = TOOLS.find((t) => t.slug === row.slug)
-    const score = norm(Number(row.ranking_score))
+    const score = Math.round(Number(row.heat_score) * 10) / 10
     const delta = Number(row.trend_delta)
+    const trend = buildTrend(weeklyByName[row.name] ?? [])
     return {
       rank: index + 1,
       prevRank: index + 1,
@@ -101,7 +139,7 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
       pricingFeel: '',
       quotes: [],
       competitors: [],
-      trend: [],
+      trend,
       website: row.official_url ?? config?.website,
       logo_url: row.logo_url ?? config?.logo_url,
     }
@@ -122,6 +160,7 @@ function sourcePlatformLabel(source: string): string {
   if (source === 'hn') return 'Hacker News'
   if (source === 'ptt') return 'PTT'
   if (source === 'dcard') return 'Dcard'
+  if (source === 'threads') return 'Threads'
   if (source === 'v2ex') return 'V2EX'
   if (source === 'juejin') return '掘金'
   return 'Reddit'

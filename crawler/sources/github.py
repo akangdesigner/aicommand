@@ -16,20 +16,28 @@ from crawler.filter import is_genuine_review
 GITHUB_GRAPHQL = "https://api.github.com/graphql"
 
 TARGET_REPOS = [
-    ("anthropics",  "claude-code",  "Claude Code"),
-    ("Exafunction", "codeium",      "Windsurf"),
-    ("bytedance",   "trae-agent",   "Trae"),
-    ("openai",      "codex",        "Codex"),
+    # 程式開發
+    ("anthropics",      "claude-code",  "Claude Code"),
+    ("getcursor",       "cursor",       "Cursor"),
+    ("Exafunction",     "codeium",      "Windsurf"),
+    ("bytedance",       "trae-agent",   "Trae"),
+    ("openai",          "codex",        "Codex"),
+    ("n8n-io",          "n8n",          "n8n"),
+    ("langgenius",      "dify",         "Dify"),
+    # 圖像生成（有公開 Discussions 的 repo）
+    ("comfyanonymous",  "ComfyUI",      "ComfyUI"),
+    # 寫作
+    ("steven-tey",      "novel",        "Notion AI"),  # 最接近 Notion AI 的開源討論
 ]
 
-# Fetch repository Discussions — community conversation, not bug tracking
+# Discussions: order by UPDATED_AT (COMMENTS is not a valid DiscussionOrderField)
 DISCUSSIONS_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
     discussions(
       first: 30
       after: $cursor
-      orderBy: {field: COMMENTS, direction: DESC}
+      orderBy: {field: UPDATED_AT, direction: DESC}
     ) {
       pageInfo { hasNextPage endCursor }
       nodes {
@@ -42,11 +50,43 @@ query($owner: String!, $repo: String!, $cursor: String) {
         comments(first: 5) {
           nodes {
             body
+            createdAt
             author { login }
             upvoteCount
           }
         }
         author { login }
+      }
+    }
+  }
+}
+"""
+
+# Issues: for repos that use Issues instead of Discussions (n8n, cursor, claude-code)
+ISSUES_QUERY = """
+query($owner: String!, $repo: String!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    issues(
+      first: 30
+      after: $cursor
+      states: [OPEN, CLOSED]
+      orderBy: {field: COMMENTS, direction: DESC}
+    ) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        title
+        body
+        createdAt
+        comments(first: 3) {
+          nodes {
+            body
+            createdAt
+            author { login }
+          }
+        }
+        author { login }
+        url
       }
     }
   }
@@ -148,6 +188,7 @@ def crawl_repo_discussions(owner: str, repo: str) -> Generator[RawMention, None,
                         "discussion_title": disc["title"],
                         "author": (comment.get("author") or {}).get("login", ""),
                         "upvotes": comment.get("upvoteCount", 0),
+                        "created_at": comment.get("createdAt", ""),
                         "url": f"https://github.com/{owner}/{repo}/discussions/{disc['number']}",
                     },
                     content_hash=_hash(comment_content),
@@ -160,14 +201,103 @@ def crawl_repo_discussions(owner: str, repo: str) -> Generator[RawMention, None,
         pages += 1
 
 
+def crawl_repo_issues(owner: str, repo: str) -> Generator[RawMention, None, None]:
+    """Fetch highly-commented Issues — user feedback & experience reports."""
+    cursor = None
+    pages = 0
+
+    while pages < 2:
+        try:
+            data = _graphql(ISSUES_QUERY, {"owner": owner, "repo": repo, "cursor": cursor})
+        except Exception as e:
+            print(f"  GitHub Issues error {owner}/{repo}: {e}")
+            break
+
+        repo_data = (data.get("data") or {}).get("repository") or {}
+        issues_data = repo_data.get("issues") or {}
+        nodes = issues_data.get("nodes") or []
+        if not nodes:
+            break
+
+        for issue in nodes:
+            if not issue or not isinstance(issue, dict):
+                continue
+
+            body = issue.get("body") or ""
+            content = f"[{issue['title']}]\n\n{body}".strip()
+
+            if not is_genuine_review(content):
+                continue
+
+            yield RawMention(
+                source_id=f"github_issue_{owner}_{repo}_{issue['number']}",
+                content=content,
+                metadata={
+                    "type": "issue",
+                    "repo": f"{owner}/{repo}",
+                    "number": issue["number"],
+                    "title": issue["title"],
+                    "author": (issue.get("author") or {}).get("login", ""),
+                    "created_at": issue.get("createdAt", ""),
+                    "url": issue.get("url", f"https://github.com/{owner}/{repo}/issues/{issue['number']}"),
+                },
+                content_hash=_hash(content),
+            )
+
+            for comment in (issue.get("comments") or {}).get("nodes", []):
+                if not comment:
+                    continue
+                cbody = comment.get("body") or ""
+                comment_content = f"[Re: {issue['title']}]\n\n{cbody}".strip()
+                if not is_genuine_review(comment_content):
+                    continue
+                yield RawMention(
+                    source_id=f"github_issue_comment_{owner}_{repo}_{issue['number']}_{_hash(cbody)[:8]}",
+                    content=comment_content,
+                    metadata={
+                        "type": "issue_comment",
+                        "repo": f"{owner}/{repo}",
+                        "issue_number": issue["number"],
+                        "issue_title": issue["title"],
+                        "author": (comment.get("author") or {}).get("login", ""),
+                        "created_at": comment.get("createdAt", ""),
+                        "url": issue.get("url", ""),
+                    },
+                    content_hash=_hash(comment_content),
+                )
+
+        page_info = issues_data.get("pageInfo", {})
+        if not page_info.get("hasNextPage"):
+            break
+        cursor = page_info.get("endCursor")
+        pages += 1
+
+
+def _has_discussions(owner: str, repo: str) -> bool:
+    """Check if a repo has any Discussions."""
+    q = """query($o:String!,$r:String!){repository(owner:$o,name:$r){discussions(first:1){nodes{title}}}}"""
+    try:
+        data = _graphql(q, {"o": owner, "r": repo})
+        nodes = (((data.get("data") or {}).get("repository") or {}).get("discussions") or {}).get("nodes", [])
+        return len(nodes) > 0
+    except Exception:
+        return False
+
+
 def run_full_crawl() -> list[RawMention]:
     mentions: list[RawMention] = []
     seen_hashes: set[str] = set()
 
     for owner, repo, _tool_name in TARGET_REPOS:
-        print(f"GitHub Discussions crawling {owner}/{repo}...")
+        if _has_discussions(owner, repo):
+            print(f"GitHub Discussions crawling {owner}/{repo}...")
+            crawl_fn = crawl_repo_discussions
+        else:
+            print(f"GitHub Issues crawling {owner}/{repo} (no Discussions)...")
+            crawl_fn = crawl_repo_issues
+
         try:
-            for mention in crawl_repo_discussions(owner, repo):
+            for mention in crawl_fn(owner, repo):
                 if mention.content_hash not in seen_hashes:
                     seen_hashes.add(mention.content_hash)
                     mentions.append(mention)

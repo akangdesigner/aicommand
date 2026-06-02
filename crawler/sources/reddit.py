@@ -3,6 +3,7 @@ Reddit crawler using public JSON API (no OAuth required).
 Reddit exposes .json endpoints for all public content.
 """
 import hashlib
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Generator
@@ -12,11 +13,19 @@ import httpx
 from crawler.filter import is_genuine_review
 
 TARGET_SUBREDDITS = [
+    # 程式開發
     "ClaudeAI", "cursor_ai", "LocalLLaMA",
     "programming", "webdev", "ExperiencedDevs",
+    "n8n", "zapier", "MakeIntegrations", "nocode",
+    # 圖像生成
+    "midjourney", "StableDiffusion", "comfyui",
+    "aivideo", "MediaSynthesis",
+    # 寫作
+    "ChatGPT", "perplexity_ai", "artificial",
 ]
 
 SEARCH_QUERIES = [
+    # 程式開發
     "claude code review experience",
     "cursor IDE review 2025",
     "trae AI IDE review",
@@ -24,15 +33,71 @@ SEARCH_QUERIES = [
     "openai codex agent 2025",
     "claude code vs cursor",
     "windsurf vs cursor comparison",
-    "codex vs claude code",
-    "trae vs cursor",
-    "trae IDE experience",
+    "n8n review experience",
+    "n8n vs zapier automation",
+    "n8n vs make.com workflow",
+    "zapier review automation 2025",
+    "make.com integromat review",
+    "dify AI workflow review",
+    # 圖像生成
+    "Midjourney v7 review experience",
+    "ComfyUI workflow tutorial review",
+    "Adobe Firefly review commercial",
+    "Ideogram AI text image review",
+    "Leonardo AI image review",
+    "GPT Image 2 review OpenAI",
+    # 影片生成
+    "Kling AI video review",
+    "AI video generation comparison 2025",
+    # 寫作
+    "Notion AI review writing",
+    "Perplexity AI review search",
+    "Grammarly AI review 2025",
+    "Jasper AI writing review",
+    "Copy.ai marketing review",
+    "ChatGPT writing experience",
 ]
 
 BASE_URL = "https://www.reddit.com"
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; ai-tool-discovery/1.0; research bot)"
-}
+OAUTH_URL = "https://oauth.reddit.com"
+USER_AGENT = os.environ.get("REDDIT_USER_AGENT", "ai-tool-discovery:v1.0 (by /u/your_username)")
+
+
+def _get_oauth_token() -> str | None:
+    """Get OAuth2 token using client credentials flow."""
+    client_id = os.environ.get("REDDIT_CLIENT_ID", "")
+    client_secret = os.environ.get("REDDIT_CLIENT_SECRET", "")
+    if not client_id or not client_secret:
+        return None
+    try:
+        resp = httpx.post(
+            "https://www.reddit.com/api/v1/access_token",
+            data={"grant_type": "client_credentials"},
+            auth=(client_id, client_secret),
+            headers={"User-Agent": USER_AGENT},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return resp.json().get("access_token")
+    except Exception as e:
+        print(f"  Reddit OAuth error: {e}")
+        return None
+
+
+_OAUTH_TOKEN: str | None = None
+
+
+def _get_headers() -> dict:
+    global _OAUTH_TOKEN
+    if _OAUTH_TOKEN is None:
+        _OAUTH_TOKEN = _get_oauth_token()
+    if _OAUTH_TOKEN:
+        return {"Authorization": f"Bearer {_OAUTH_TOKEN}", "User-Agent": USER_AGENT}
+    return {"User-Agent": USER_AGENT}
+
+
+def _base_url() -> str:
+    return OAUTH_URL if _OAUTH_TOKEN else BASE_URL
 
 MIN_POST_SCORE = 10
 MIN_COMMENT_SCORE = 5
@@ -53,13 +118,18 @@ def _hash(text: str) -> str:
 
 
 def _get(client: httpx.Client, url: str, params: dict = {}) -> dict | None:
+    global _OAUTH_TOKEN
     try:
         time.sleep(RATE_LIMIT_DELAY)
-        resp = client.get(url, params=params, headers=HEADERS, timeout=30)
+        resp = client.get(url, params=params, headers=_get_headers(), timeout=30)
+        if resp.status_code == 401 and _OAUTH_TOKEN:
+            # Token expired, retry once
+            _OAUTH_TOKEN = _get_oauth_token()
+            resp = client.get(url, params=params, headers=_get_headers(), timeout=30)
         if resp.status_code == 429:
             print("  Rate limited, waiting 60s...")
             time.sleep(60)
-            resp = client.get(url, params=params, headers=HEADERS, timeout=30)
+            resp = client.get(url, params=params, headers=_get_headers(), timeout=30)
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
@@ -103,7 +173,7 @@ def crawl_subreddit(client: httpx.Client, subreddit: str) -> Generator[RawMentio
     """Fetch hot + top posts from a subreddit."""
     for sort in ("hot", "top"):
         params = {"limit": 50, "t": "month"} if sort == "top" else {"limit": 50}
-        data = _get(client, f"{BASE_URL}/r/{subreddit}/{sort}.json", params)
+        data = _get(client, f"{_base_url()}/r/{subreddit}/{sort}.json", params)
         if not data:
             continue
 
@@ -116,7 +186,7 @@ def crawl_subreddit(client: httpx.Client, subreddit: str) -> Generator[RawMentio
 
 def crawl_comments(client: httpx.Client, post_id: str, subreddit: str, post_title: str) -> Generator[RawMention, None, None]:
     """Fetch top comments for a post."""
-    data = _get(client, f"{BASE_URL}/r/{subreddit}/comments/{post_id}.json", {"limit": 20, "sort": "top", "depth": 2})
+    data = _get(client, f"{_base_url()}/r/{subreddit}/comments/{post_id}.json", {"limit": 20, "sort": "top", "depth": 2})
     if not data or not isinstance(data, list) or len(data) < 2:
         return
 
@@ -159,7 +229,7 @@ def crawl_search(client: httpx.Client, query: str) -> Generator[RawMention, None
         "limit": 25,
         "type": "link",
     }
-    data = _get(client, f"{BASE_URL}/search.json", params)
+    data = _get(client, f"{_base_url()}/search.json", params)
     if not data:
         return
 

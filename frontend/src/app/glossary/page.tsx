@@ -2,19 +2,38 @@ import type { Metadata } from 'next'
 import { GLOSSARY_CATEGORIES } from '@/lib/glossary'
 
 export const metadata: Metadata = {
-  title: '名詞解釋 Field Guide · AICommand',
-  description: 'AI 開發工具常見術語完整指南——給開發者、設計師、PM 的術語對照表，用白話說清楚每個詞的意思。',
+  title: '名詞大補帖 · AI 工具術語指南',
+  description: 'AI 開發工具常見術語完整指南：Vibe Coding、MCP、RAG、Fine-tuning……35 個關鍵詞，用白話說清楚，非工程師也看得懂。',
   openGraph: {
-    title: '名詞解釋 · AICommand Field Guide',
-    description: 'AI 工具常見術語，從工作方式到定價模式，一次看懂。',
+    title: '名詞大補帖 · AICommand AI 工具術語指南',
+    description: 'AI 工具常見術語，從工作方式到定價模式，一次看懂。共 35 個詞條。',
   },
+  alternates: { canonical: 'https://aicommand.app/glossary' },
 }
 
 export default function GlossaryPage() {
   const allEntries = GLOSSARY_CATEGORIES.flatMap((c) => c.entries)
   const runningNums = new Map(allEntries.map((e, i) => [e.id, i + 1]))
 
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    name: 'AICommand AI 工具名詞大補帖',
+    description: 'AI 開發工具常見術語指南，涵蓋工作方式、工具類型、AI 概念、主流模型、定價模式與工具選型六大分類。',
+    url: 'https://aicommand.app/glossary',
+    definedTerm: allEntries.map((e) => ({
+      '@type': 'DefinedTerm',
+      name: e.term,
+      description: e.body,
+      termCode: e.id,
+      inDefinedTermSet: 'https://aicommand.app/glossary',
+      url: `https://aicommand.app/glossary#${e.id}`,
+    })),
+  }
+
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
     <div className="bg-[#FBFBF9] text-stone-900">
       {/* Field guide header */}
       <header className="border-b border-stone-200 bg-white">
@@ -116,7 +135,7 @@ export default function GlossaryPage() {
               看到其他不懂的詞？歡迎回饋給我們補充。
             </p>
             <a
-              href="mailto:hello@aicommand.app"
+              href="mailto:asdtodd42@gmail.com"
               className="rounded-full border border-stone-200 px-4 py-1.5 text-[12.5px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-white hover:text-stone-900"
             >
               寫信給我們
@@ -125,5 +144,6 @@ export default function GlossaryPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

@@ -4,6 +4,7 @@ Usage: python -m crawler.run_all [--sources ptt,dcard,threads,reddit,hn,github]
 """
 import os
 import sys
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,6 +38,18 @@ ALL_SOURCES = {
 }
 
 
+def extract_posted_at(metadata: dict, source: str) -> str | None:
+    """Extract original post timestamp from metadata."""
+    if source == "reddit":
+        utc = metadata.get("created_utc", 0)
+        if utc:
+            return datetime.fromtimestamp(int(utc), tz=timezone.utc).isoformat()
+    created_at = metadata.get("created_at", "")
+    if created_at:
+        return created_at
+    return None
+
+
 def run_crawler(label: str, fn) -> list:
     print(f"\n{'─'*40}\n  {label}\n{'─'*40}")
     try:
@@ -61,7 +74,7 @@ def save_rows(rows: list[dict]) -> None:
                 inserted = len(resp.json()) if resp.text and resp.text != "[]" else 0
                 print(f"  批次 {i//500+1}: {inserted} 筆新增，{len(batch)-inserted} 筆重複略過")
             else:
-                print(f"  Supabase 錯誤 {resp.status_code}: {resp.text[:200]}")
+                print(f"  Supabase error {resp.status_code}: {resp.text[:300].encode('ascii','replace').decode()}")
 
 
 def main(sources: list[str]) -> None:
@@ -89,6 +102,7 @@ def main(sources: list[str]) -> None:
             "content": m.content,
             "metadata": m.metadata,
             "content_hash": m.content_hash,
+            "posted_at": extract_posted_at(m.metadata, m.source),
         }
         for m in all_mentions
     ]

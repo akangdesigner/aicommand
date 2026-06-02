@@ -1,36 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import type { FaqCategory } from '@/lib/faq'
 
 export function FaqPage({ categories }: { categories: FaqCategory[] }) {
   const allQs = categories.flatMap((c) => c.questions)
-  const progressRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const bar = progressRef.current
-    if (!bar) return
-    const update = () => {
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-      bar.style.width = `${Math.min(pct, 100)}%`
-    }
-    window.addEventListener('scroll', update, { passive: true })
-    update()
-    return () => window.removeEventListener('scroll', update)
-  }, [])
 
   return (
     <div className="bg-[#FBFBF9] text-stone-900">
-      {/* Reading progress */}
-      <div className="sticky top-14 z-10 h-[3px] w-full bg-stone-100">
-        <div
-          ref={progressRef}
-          className="h-full transition-[width] duration-100"
-          style={{ width: '0%', background: 'oklch(0.55 0.18 265)' }}
-        />
-      </div>
 
       {/* Article header */}
       <header className="border-b border-stone-200 bg-white">
@@ -39,13 +15,13 @@ export function FaqPage({ categories }: { categories: FaqCategory[] }) {
             常見問題 · 給開發者、設計師、PM
           </div>
           <h1 className="mt-3 text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-[56px]">
-            AI 工具排行榜，
+            關於 AICommand
             <br />
             <span
               className="font-semibold text-stone-500"
               style={{ fontFamily: 'var(--font-source-serif), Georgia, serif', fontStyle: 'italic', fontWeight: 400 }}
             >
-              到底怎麼回事？
+              常見問題
             </span>
           </h1>
           <p className="mt-6 text-[17px] leading-relaxed text-stone-600">
@@ -125,10 +101,10 @@ export function FaqPage({ categories }: { categories: FaqCategory[] }) {
               每週我們會根據用戶回饋新增問題進這份指南。你的問題很可能就是下一個。
             </p>
             <a
-              href="mailto:hello@aicommand.app"
+              href="mailto:asdtodd42@gmail.com"
               className="mt-4 inline-block rounded-md bg-stone-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-stone-800 transition"
             >
-              寫信給 hello@aicommand.app
+              寫信給 asdtodd42@gmail.com
             </a>
           </div>
         </article>

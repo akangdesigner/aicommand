@@ -16,6 +16,7 @@ AI_KEYWORDS = [
     "ai编程", "ai 編程", "windsurf", "n8n", "大模型", "llm",
     "midjourney", "ai写作", "人工智能", "人工智慧", "自动化", "自動化",
     "gpt", "gemini", "perplexity", "bolt", "lovable",
+    "zapier", "make.com", "dify", "工作流", "workflow",
 ]
 
 NODE_NAMES = [

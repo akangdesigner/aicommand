@@ -14,12 +14,13 @@ from pipeline.schema import (
     EXTRACTION_BATCH_SYSTEM_PROMPT,
     TARGET_TOOLS,
     normalize_tool_name,
+    validate_make_context,
 )
 
 MODEL = "llama-3.1-8b-instant"
 MIN_CONTENT_LENGTH = 50
-BATCH_SIZE = 3    # smaller batches → fewer tokens per request → less likely to hit TPM limit
-RATE_LIMIT_DELAY = 15.0  # seconds between batches → 4 RPM, safe under 30 RPM limit
+BATCH_SIZE = 5
+RATE_LIMIT_DELAY = 5.0
 MAX_RETRIES = 2
 
 
@@ -92,7 +93,7 @@ def _parse_batch_response(mention_ids: list[int], text: str) -> list[ExtractionR
 def _build_batch_user_msg(batch: list[dict]) -> str:
     blocks = "\n\n".join(f"[{i+1}]\n{m['content'][:1500]}" for i, m in enumerate(batch))
     schema = (
-        '{"tool_name":"Claude Code"|"Cursor"|"Trae"|"Windsurf"|"Codex"|null,'
+        '{"tool_name":"Claude Code"|"Cursor"|"Trae"|"Windsurf"|"Codex"|"n8n"|"Make(=make.com automation)"|"Zapier"|"Dify"|null,'
         '"sentiment":"positive"|"negative"|"neutral"|"mixed"|null,'
         '"use_cases":[],"pain_points":[],"target_audience":[],'
         '"pricing_signal":null,"comparisons":[{"tool":str,"verdict":str}],'
@@ -169,12 +170,14 @@ def run_batch_extraction(mentions: list[dict]) -> list[ExtractionResult]:
 
     results = asyncio.run(_run_async(valid))
 
+    content_by_id = {m["id"]: m.get("content", "") for m in mentions}
     good = [
         r for r in results
         if r.tool_name in TARGET_TOOLS
         and r.confidence >= 0.6
         and not r.error
         and r.content_type == "review"
+        and validate_make_context(r.tool_name, content_by_id.get(r.raw_mention_id, ""))
     ]
     errors = [r for r in results if r.error]
     print(f"Done: {len(good)} valid | {len(errors)} errors | {len(results) - len(good) - len(errors)} no-tool")

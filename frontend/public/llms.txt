@@ -1,0 +1,44 @@
+# AICommand
+
+> AI 工具排行榜——從 Reddit、Hacker News、PTT、Dcard 的真實社群討論分析 AI 工具熱度，每週更新，不是廠商買位。
+
+AICommand 是一個以社群聲量為核心的 AI 工具排行榜，排名完全由演算法產生，與任何工具廠商無利益關係。
+
+## 核心功能
+
+- **AI 工具排行榜**：依社群熱度分數（0–100）排列，涵蓋程式開發、寫作、圖像生成、自動化、語音五大類別
+- **最新動態**：每 12 小時自動抓取 Google News AI 工具相關新聞，涵蓋主流媒體與科技部落格
+- **名詞大補帖**：35 個 AI 工具常見術語白話解釋，涵蓋工作方式、工具類型、AI 概念、主流模型、定價模式、工具選型六大分類
+- **工具詳情頁**：每個工具的社群評論摘要、情緒分布、使用場景、痛點、8 週趨勢
+
+## 資料來源
+
+- Hacker News（英文技術社群）
+- GitHub Discussions & Issues
+- PTT（台灣 BBS，Soft_Job / C_Chat 等版）
+- Dcard（台灣年輕族群科技板）
+- Threads（Meta 短文平台）
+
+## 排名方法
+
+每週從各平台抓取含 AI 工具名稱的社群貼文，隨機抽 30 則送 Groq LLM 分析情緒（正面／負面／中立），再以 HN 演算法精神計算熱度分數：
+
+```
+score = mentions^0.8 × sentiment_weight × (1 + 0.5 × recent_ratio)
+```
+
+所有工具分數 normalize 成 0–100，最高分工具為 100。
+
+## 聯絡
+
+- Email: asdtodd42@gmail.com
+- 網站: https://aicommand.app
+
+## 頁面索引
+
+- 首頁（排行榜）: https://aicommand.app/
+- 最新動態: https://aicommand.app/news
+- 名詞大補帖: https://aicommand.app/glossary
+- 常見問題: https://aicommand.app/faq
+- 關於本站: https://aicommand.app/about
+- Sitemap: https://aicommand.app/sitemap.xml

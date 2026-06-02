@@ -35,6 +35,7 @@ function DiscussionCard({ d }: { d: RecentDiscussion }) {
     <div className="flex h-full w-[300px] shrink-0 flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`https://www.google.com/s2/favicons?domain=${d.source === 'hn' ? 'news.ycombinator.com' : d.source + '.com'}&sz=32`}
             width={12}

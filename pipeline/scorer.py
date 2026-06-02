@@ -5,6 +5,7 @@ Run: python -m pipeline.scorer
 """
 import os
 import time
+from datetime import datetime, timezone, timedelta
 import httpx
 from dotenv import load_dotenv
 
@@ -30,7 +31,7 @@ KNOWN_CATEGORIES: dict[str, str] = {
     'Notion AI': 'writing', 'Grammarly': 'writing', 'Jasper': 'writing',
     'Midjourney': 'image', 'DALL-E': 'image', 'Stable Diffusion': 'image',
     'Flux': 'image', 'Runway': 'image', 'Ideogram': 'image',
-    'n8n': 'automation', 'Zapier': 'automation', 'Make': 'automation',
+    'n8n': 'automation', 'Zapier': 'automation', 'Make': 'automation', 'Dify': 'automation',
     'ElevenLabs': 'voice', 'Whisper': 'voice',
 }
 
@@ -81,10 +82,85 @@ def rescore(name: str) -> float:
         return 0.0
 
 
+TARGET_TOOL_SLUGS: dict[str, str] = {
+    'Claude Code': 'claude-code',
+    'Cursor':      'cursor',
+    'Windsurf':    'windsurf',
+    'Trae':        'trae',
+    'Codex':       'codex',
+    'n8n':         'n8n',
+    'Make':        'make',
+    'Zapier':      'zapier',
+    'Dify':        'dify',
+}
+
+
+# 用更精確的關鍵字搜尋，避免通用詞誤判（如 "Make" 會匹配所有含 make 的句子）
+MENTION_SEARCH_KEYWORDS: dict[str, str] = {
+    'Make': 'make.com',  # 用 make.com 避免匹配 "make" 這個通用詞
+}
+
+
+def _week_start() -> str:
+    today = datetime.now(timezone.utc).date()
+    return str(today - timedelta(days=today.weekday()))
+
+
+def update_heat_score(name: str, heat: float) -> None:
+    """Write normalized 0-100 heat_score back to tools table."""
+    slug = name.lower().replace(' ', '-').replace('/', '-')
+    httpx.patch(
+        f'{URL}/rest/v1/tools',
+        params={'slug': f'eq.{slug}'},
+        json={'heat_score': round(heat, 1)},
+        headers=HEADERS,
+        timeout=10,
+    )
+
+
+def record_score_history(name: str, heat: float) -> None:
+    """Upsert weekly heat_score snapshot (0-100) — used for trend chart."""
+    httpx.post(
+        f'{URL}/rest/v1/tool_score_history',
+        json={'tool_name': name, 'week': _week_start(), 'score': round(heat, 1)},
+        headers={**HEADERS, 'Prefer': 'resolution=merge-duplicates,return=minimal'},
+        timeout=10,
+    )
+
+
+def patch_raw_mention_counts() -> None:
+    """Update tools.mention_count to show real raw_mentions count (not extracted_insights count)."""
+    print('\nPatching mention_count with real raw_mentions counts...')
+    with httpx.Client(timeout=30) as client:
+        for name, slug in TARGET_TOOL_SLUGS.items():
+            keyword = MENTION_SEARCH_KEYWORDS.get(name, name)
+            resp = client.get(
+                f'{URL}/rest/v1/raw_mentions',
+                params={'select': 'id', 'limit': 1, 'content': f'ilike.*{keyword}*'},
+                headers={**HEADERS, 'Prefer': 'count=exact'},
+            )
+            cr = resp.headers.get('content-range', '0/0')
+            try:
+                count = int(cr.split('/')[-1])
+            except (ValueError, IndexError):
+                count = 0
+            client.patch(
+                f'{URL}/rest/v1/tools',
+                params={'slug': f'eq.{slug}'},
+                json={'mention_count': count},
+                headers=HEADERS,
+            )
+            print(f'  {name}: {count:,} 則')
+
+
 def run() -> None:
     if not URL or not KEY:
         print('SUPABASE_URL / SUPABASE_SERVICE_KEY not set in .env')
         return
+
+    # 確保所有追蹤工具都在 tools 表，即使還沒有 insights
+    for name, slug in TARGET_TOOL_SLUGS.items():
+        upsert_tool(name)
 
     print('Fetching distinct tool names from extracted_insights...')
     names = get_distinct_tool_names()
@@ -98,10 +174,21 @@ def run() -> None:
         print(f'  {name}: {score:.2f}')
         time.sleep(0.1)
 
-    print('\n=== Top 15 by score ===')
-    for score, name in sorted(results, reverse=True)[:15]:
-        print(f'  {score:6.2f}  {name}')
+    # Normalize ranking_score → heat_score (0-100) and store in DB + history
+    max_raw = max((s for s, _ in results), default=1) or 1
+    print('\n=== Normalizing heat scores ===')
+    for raw, name in results:
+        heat = round((raw / max_raw) * 100, 1)
+        update_heat_score(name, heat)
+        record_score_history(name, heat)
+        print(f'  {name}: {heat:.1f}')
 
+    print('\n=== Top 15 by heat score ===')
+    for raw, name in sorted(results, reverse=True)[:15]:
+        heat = round((raw / max_raw) * 100, 1)
+        print(f'  {heat:5.1f}  {name}')
+
+    patch_raw_mention_counts()
     print('\nDone.')
 
 

@@ -1,6 +1,6 @@
-'use client'
+﻿'use client'
 
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Tool, Quote, SentimentBreakdown } from '@/lib/data'
 import { cx } from '@/lib/utils'
@@ -126,9 +126,9 @@ const SENTIMENT_STYLE = {
 function QuoteCard({ q }: { q: Quote }) {
   const s = SENTIMENT_STYLE[q.sentiment] ?? SENTIMENT_STYLE.mixed
   return (
-    <figure className="relative rounded-xl border border-stone-200 bg-white p-5">
-      <div className="absolute left-5 top-3 text-[40px] leading-none text-stone-200 font-serif select-none">"</div>
-      <blockquote className="pl-7 text-[14.5px] leading-relaxed text-stone-800 text-balance" lang="en">
+    <figure className="relative rounded-xl border border-stone-200 bg-white p-5 flex flex-col h-full">
+      <div className="absolute left-5 top-3 text-[40px] leading-none text-stone-200 font-serif select-none">{'“'}</div>
+      <blockquote className="pl-7 text-[14.5px] leading-relaxed text-stone-800 flex-1" lang="en">
         {q.text}
       </blockquote>
       <figcaption className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-7 text-[12px] text-stone-500">
@@ -165,7 +165,67 @@ function QuoteCard({ q }: { q: Quote }) {
   )
 }
 
-const RADAR_AXES = ['社群熱度', '社群口碑', '定價', '近期動態', '討論深度']
+const QUOTES_PER_PAGE = 9
+
+function QuotesSection({ quotes }: { quotes: Quote[] }) {
+  const [page, setPage] = useState(0)
+  const totalPages = Math.ceil(quotes.length / QUOTES_PER_PAGE)
+  const visible = quotes.slice(page * QUOTES_PER_PAGE, (page + 1) * QUOTES_PER_PAGE)
+
+  return (
+    <section className="mb-8">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <div>
+          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-900">真實社群評論</h2>
+          <p className="mt-0.5 text-[11px] text-stone-400">來自 Reddit、HN、PTT、Dcard 的真實社群討論</p>
+        </div>
+        {quotes.length > 0 && (
+          <span className="text-[11px] tracking-[0.04em] text-stone-400 shrink-0">
+            精選真實評論 {quotes.length} 則
+          </span>
+        )}
+      </div>
+
+      {quotes.length === 0 ? (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-[13.5px] text-stone-400">
+          社群引言收集中，下次資料更新後將顯示真實用戶評論。
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {visible.map((q, i) => (
+              <QuoteCard key={page * QUOTES_PER_PAGE + i} q={q} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-5 flex items-center justify-between">
+              <button
+                onClick={() => setPage(p => p - 1)}
+                disabled={page === 0}
+                className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-4 py-2 text-[13px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                ← 上一頁
+              </button>
+              <span className="font-mono text-[12.5px] tabular-nums text-stone-400">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => p + 1)}
+                disabled={page >= totalPages - 1}
+                className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-4 py-2 text-[13px] font-medium text-stone-600 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                下一頁 →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+const RADAR_AXES = ['社群熱度', '社群口碑', '定價', '近期動態', 'AI短評']
 const RADAR_N = 5
 const RADAR_CX = 210, RADAR_CY = 200, RADAR_MAX_R = 120, RADAR_LABEL_R = 148
 
@@ -309,10 +369,8 @@ function radarExplanation(axis: string, score: number, tool: Tool): string {
       score >= 60 ? '近期持續有更新' : '近期更新動態較少'
     )
   }
-  if (axis === '討論深度') {
-    return score >= 65 ? '評論內容充實，多為深度使用心得'
-         : score >= 35 ? '評論長短不一，有一定深度'
-         : '多為短評或問答，深度有限'
+  if (axis === 'AI短評') {
+    return tool.aiReview ?? tool.depthDescription ?? '尚無足夠資料生成 AI 短評'
   }
   return ''
 }
@@ -506,9 +564,9 @@ export function DetailPageClient({ tool, allTools }: { tool: Tool; allTools: Too
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {/* 定價 */}
-            {!!tool.pricingFeel && (
+            {!!(tool.pricingDescription || tool.pricingFeel) && (
               <InsightCard title="定價" accent="oklch(0.6 0.13 80)">
-                <p className="text-[13.5px] leading-relaxed text-stone-700">{tool.pricingFeel}</p>
+                <p className="text-[13.5px] leading-relaxed text-stone-700">{tool.pricingDescription ?? tool.pricingFeel}</p>
               </InsightCard>
             )}
 
@@ -545,28 +603,7 @@ export function DetailPageClient({ tool, allTools }: { tool: Tool; allTools: Too
       )}
 
       {/* Quotes */}
-      <section className="mb-8">
-        <div className="mb-4 flex items-baseline justify-between gap-3">
-          <div>
-            <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-stone-900">真實社群評論</h2>
-            <p className="mt-0.5 text-[11px] text-stone-400">來自 Reddit、HN、PTT、Dcard，已過濾求救文與教學文</p>
-          </div>
-          {tool.quotes.length > 0 && (
-            <span className="text-[11px] tracking-[0.04em] text-stone-400 shrink-0">精選真實評論 {tool.quotes.length} 則</span>
-          )}
-        </div>
-        {tool.quotes.length === 0 ? (
-          <div className="rounded-xl border border-stone-200 bg-stone-50 px-6 py-10 text-center text-[13.5px] text-stone-400">
-            社群引言收集中，下次資料更新後將顯示真實用戶評論。
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {tool.quotes.map((q, i) => (
-              <QuoteCard key={i} q={q} />
-            ))}
-          </div>
-        )}
-      </section>
+      <QuotesSection quotes={tool.quotes} />
 
       {/* Trend chart + comparisons */}
       {(tool.trend.length >= 2 || tool.competitors.length > 0) && (

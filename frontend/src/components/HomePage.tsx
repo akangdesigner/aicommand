@@ -366,9 +366,7 @@ function FeaturedCard({ tool }: { tool: Tool }) {
 
       <div className="flex items-start justify-between gap-3 pt-1">
         <ToolLogo tool={tool} size="lg" />
-        {tool.trend.length >= 2 && (
-          <Sparkline data={tool.trend} width={104} height={32} stroke={tool.accent} />
-        )}
+        <Sparkline data={tool.trend} width={104} height={32} stroke={tool.accent} />
       </div>
 
       <div className="space-y-2">
@@ -393,11 +391,9 @@ function FeaturedCard({ tool }: { tool: Tool }) {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {tool.delta !== 0 && <TrendArrow delta={tool.delta} size="lg" />}
-          {tool.discussions > 0 && (
-            <div className="text-[11.5px] text-stone-500 font-mono tabular-nums">
-              {tool.discussions.toLocaleString()} 則討論
-            </div>
-          )}
+          <div className="text-[11.5px] text-stone-500 font-mono tabular-nums">
+            {tool.discussions > 0 ? `${tool.discussions.toLocaleString()} 則討論` : '資料收集中'}
+          </div>
         </div>
       </div>
     </button>
@@ -409,55 +405,56 @@ function CompactRow({ tool }: { tool: Tool }) {
   return (
     <button
       onClick={() => router.push(`/tools/${tool.slug}`)}
-      className="group grid w-full grid-cols-[44px_44px_1fr_auto] items-center gap-4 border-b border-stone-100 px-4 py-3.5 text-left transition last:border-b-0 hover:bg-stone-50 sm:grid-cols-[56px_44px_1.4fr_1fr_auto_auto_auto] sm:gap-5 sm:px-6"
+      className="group grid w-full grid-cols-[44px_44px_1fr_auto] items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left transition last:border-b-0 hover:bg-stone-50 sm:grid-cols-[48px_40px_1fr_96px_72px_72px_80px] sm:gap-4 sm:px-6"
     >
+      {/* 排名 */}
       <RankPill rank={tool.rank} />
+
+      {/* Logo */}
       <ToolLogo tool={tool} size="md" />
 
+      {/* 工具名稱 */}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="truncate text-[15px] font-semibold tracking-[-0.01em] text-stone-900">{tool.name}</span>
-          <span className="hidden sm:inline-flex">
-            <CategoryBadge category={tool.category} />
-          </span>
+          <span className="hidden sm:inline-flex"><CategoryBadge category={tool.category} /></span>
         </div>
         {tool.description && (
           <p className="mt-0.5 truncate text-[12.5px] text-stone-500">{tool.description}</p>
         )}
       </div>
 
-      <div className="hidden sm:block">
-        {tool.trend.length >= 2
-          ? <Sparkline data={tool.trend} width={110} height={26} stroke={tool.accent} />
-          : <div className="w-[110px] h-[26px]" />
+      {/* 趨勢 */}
+      <div className="hidden sm:flex items-center">
+        <Sparkline data={tool.trend} width={96} height={26} stroke={tool.accent} />
+      </div>
+
+      {/* 熱度分數 */}
+      <div className="hidden sm:flex items-center justify-end">
+        {tool.score > 0
+          ? <ScoreNumber value={tool.score} size="md" />
+          : <span className="text-[12px] text-stone-300">—</span>
         }
       </div>
 
-      {tool.score > 0 ? (
-        <div className="hidden sm:flex flex-col items-end gap-0.5">
-          <div className="text-[10.5px] tracking-[0.06em] text-stone-400">分數</div>
-          <ScoreNumber value={tool.score} size="md" />
-        </div>
-      ) : (
-        <div className="hidden sm:block w-10" />
-      )}
-
-      <div className="flex flex-col items-end gap-1">
-        {tool.delta !== 0 && <TrendArrow delta={tool.delta} />}
-        {tool.discussions > 0 && (
-          <span className="hidden sm:block text-[11px] font-mono text-stone-400 tabular-nums">
-            {tool.discussions.toLocaleString()}
-          </span>
-        )}
-        {tool.score > 0 && (
-          <span className="sm:hidden font-mono text-[12px] tabular-nums text-stone-700">{tool.score.toFixed(1)}</span>
-        )}
+      {/* 總討論數 */}
+      <div className="hidden sm:flex items-center justify-end">
+        <span className="font-mono text-[13px] tabular-nums text-stone-600">
+          {tool.discussions > 0 ? tool.discussions.toLocaleString() : '—'}
+        </span>
       </div>
 
-      {tool.website && (
-        <div className="hidden sm:flex items-center">
-          <OfficialLink url={tool.website} />
-        </div>
+      {/* 官網連結 */}
+      <div className="hidden sm:flex items-center justify-end">
+        {tool.website
+          ? <OfficialLink url={tool.website} />
+          : <span className="text-[12px] text-stone-300">—</span>
+        }
+      </div>
+
+      {/* mobile 僅顯示分數 */}
+      {tool.score > 0 && (
+        <span className="sm:hidden font-mono text-[12px] tabular-nums text-stone-700">{tool.score.toFixed(1)}</span>
       )}
     </button>
   )
@@ -504,7 +501,7 @@ export function HomePageClient({
           開發者<span className="text-stone-500">真正在討論</span>的 AI 工具
         </h1>
         <p className="mt-4 max-w-[580px] text-[15px] leading-relaxed text-stone-600">
-          匯集 Reddit、HN、PTT、Dcard 的真實評論，看懂每款 AI 工具的社群口碑——已過濾求救文，只留使用心得。
+          匯集 Reddit、HN、PTT、Dcard 的真實評論，看懂每款 AI 工具的社群口碑。
         </p>
         <VibeSearch tools={tools} />
       </header>
@@ -535,14 +532,14 @@ export function HomePageClient({
       {/* Compact list */}
       {rest.length > 0 && (
         <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-          <div className="hidden grid-cols-[56px_44px_1.4fr_1fr_auto_auto_auto] gap-5 border-b border-stone-100 bg-stone-50/60 px-6 py-2.5 text-[11px] font-medium tracking-[0.04em] text-stone-500 sm:grid">
+          <div className="hidden grid-cols-[48px_40px_1fr_96px_72px_72px_80px] gap-4 border-b border-stone-100 bg-stone-50/60 px-6 py-2.5 text-[11px] font-medium tracking-[0.04em] text-stone-500 sm:grid">
             <div>排名</div>
             <div />
             <div>工具</div>
-            <div>近 8 週趨勢</div>
-            <div className="text-right">分數</div>
-            <div className="text-right">變化</div>
-            <div />
+            <div>趨勢</div>
+            <div className="text-right">熱度分數</div>
+            <div className="text-right">總討論數</div>
+            <div className="text-right">官網連結</div>
           </div>
           {rest.map((t) => <CompactRow key={t.slug} tool={t} />)}
         </section>
