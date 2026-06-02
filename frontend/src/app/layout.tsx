@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   },
 }
 
-export const jsonLd = {
+const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'AICommand',

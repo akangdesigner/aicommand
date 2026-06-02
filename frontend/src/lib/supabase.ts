@@ -79,8 +79,10 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
         .order('week', { ascending: true }),
     ])
     if (toolsRes.error) throw toolsRes.error
+    if (trendsRes.error) console.error('[supabase] tool_weekly_trends error:', trendsRes.error)
     data = toolsRes.data
     weeklyRows = (trendsRes.data ?? []) as typeof weeklyRows
+    console.log('[supabase] weeklyRows count:', weeklyRows.length)
   } catch (err) {
     console.error('[supabase] getToolsForHomePage error:', err)
     return TOOLS
