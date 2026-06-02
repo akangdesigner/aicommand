@@ -15,7 +15,9 @@ SEARCH_URL = "https://www.dcard.tw/search?query={keyword}&tab=post"
 KEYWORDS = [
     "Claude Code", "Cursor", "Windsurf", "Trae", "Codex",
     "n8n", "Zapier", "make.com", "Dify",
-    "Midjourney", "可靈", "ChatGPT", "Notion AI",
+    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI",
+    "Seedance", "可靈", "Kling",
+    "ChatGPT", "Notion AI", "Perplexity", "Grammarly",
 ]
 THREE_MONTHS_AGO = datetime.now(timezone.utc) - timedelta(days=90)
 DATE_RE = re.compile(r"^(\d{2}/\d{1,2}/\d{1,2}|\d{1,2}/\d{1,2})$")

@@ -47,8 +47,11 @@ SEARCH_QUERIES = [
     "Leonardo AI image review",
     "GPT Image 2 review OpenAI",
     # 影片生成
+    "Seedance video generation review",
+    "Seedance 2.0 review experience",
     "Kling AI video review",
-    "AI video generation comparison 2025",
+    "Kling 3.0 video generation",
+    "AI video generation comparison 2026",
     # 寫作
     "Notion AI review writing",
     "Perplexity AI review search",

@@ -16,7 +16,9 @@ API_BASE = "https://graph.threads.net/v1.0"
 KEYWORDS = [
     "Claude Code", "Cursor", "Windsurf", "Trae", "Codex",
     "n8n", "Zapier", "make.com", "Dify",
-    "Midjourney", "可靈", "ChatGPT", "Notion AI",
+    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI",
+    "Seedance", "可靈", "Kling",
+    "ChatGPT", "Notion AI", "Perplexity", "Grammarly",
 ]
 THREE_MONTHS_AGO = datetime.now(timezone.utc) - timedelta(days=90)
 FIELDS = "id,text,media_type,permalink,timestamp,username"
