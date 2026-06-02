@@ -24,15 +24,28 @@ HEADERS = {
 }
 
 TOOL_KEYWORDS = {
-    "Claude Code": ["Claude Code"],
-    "Cursor":      ["Cursor"],
-    "Trae":        ["Trae"],
-    "Windsurf":    ["Windsurf"],
-    "Codex":       ["Codex"],
-    "n8n":         ["n8n"],
-    "Make":        ["make.com", "Integromat"],
-    "Zapier":      ["Zapier"],
-    "Dify":        ["Dify"],
+    "Claude Code":   ["Claude Code"],
+    "Cursor":        ["Cursor"],
+    "Trae":          ["Trae"],
+    "Windsurf":      ["Windsurf"],
+    "Codex":         ["Codex"],
+    "n8n":           ["n8n"],
+    "Make":          ["make.com", "Integromat"],
+    "Zapier":        ["Zapier"],
+    "Dify":          ["Dify"],
+    "Midjourney":    ["Midjourney", "mid journey"],
+    "ComfyUI":       ["ComfyUI", "comfy ui"],
+    "Adobe Firefly": ["Adobe Firefly", "Firefly"],
+    "Ideogram":      ["Ideogram"],
+    "Leonardo AI":   ["Leonardo AI", "Leonardo"],
+    "Seedance":      ["Seedance"],
+    "Kling":         ["Kling", "可靈", "keling"],
+    "ChatGPT":       ["ChatGPT", "gpt-4o", "gpt-4"],
+    "Notion AI":     ["Notion AI"],
+    "Perplexity":    ["Perplexity"],
+    "Grammarly":     ["Grammarly"],
+    "Jasper":        ["Jasper"],
+    "Copy.ai":       ["Copy.ai", "copyai"],
 }
 
 

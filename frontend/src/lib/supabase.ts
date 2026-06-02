@@ -42,6 +42,7 @@ const CATEGORY_MAP: Record<string, Tool['category']> = {
   coding:     '程式開發',
   writing:    '寫作',
   image:      '圖像生成',
+  video:      '影片生成',
   automation: '自動化',
   voice:      '語音',
 }
@@ -155,7 +156,12 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
   return [...merged, ...extras]
 }
 
-const TOOL_TERMS = ['Claude Code', 'Cursor', 'Windsurf', 'Trae', 'Codex']
+const TOOL_TERMS = [
+  'Claude Code', 'Cursor', 'Windsurf', 'Trae', 'Codex',
+  'n8n', 'Dify', 'Zapier',
+  'ChatGPT', 'Perplexity', 'Notion AI',
+  'Midjourney', 'ComfyUI', 'Kling', 'Seedance',
+]
 
 function sourcePlatformLabel(source: string): string {
   if (source === 'github') return 'GitHub'

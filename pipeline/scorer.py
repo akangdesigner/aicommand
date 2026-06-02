@@ -27,10 +27,13 @@ KNOWN_CATEGORIES: dict[str, str] = {
     'GitHub Copilot': 'coding', 'Windsurf': 'coding', 'Codeium': 'coding',
     'Aider': 'coding', 'Continue.dev': 'coding', 'Zed': 'coding',
     'v0': 'coding', 'Bolt': 'coding', 'Replit': 'coding', 'Lovable': 'coding',
+    'Trae': 'coding', 'Codex': 'coding',
     'ChatGPT': 'writing', 'Perplexity': 'writing', 'Gemini': 'writing',
-    'Notion AI': 'writing', 'Grammarly': 'writing', 'Jasper': 'writing',
+    'Notion AI': 'writing', 'Grammarly': 'writing', 'Jasper': 'writing', 'Copy.ai': 'writing',
     'Midjourney': 'image', 'DALL-E': 'image', 'Stable Diffusion': 'image',
     'Flux': 'image', 'Runway': 'image', 'Ideogram': 'image',
+    'ComfyUI': 'image', 'Adobe Firefly': 'image', 'Leonardo AI': 'image',
+    'Seedance': 'video', 'Kling': 'video',
     'n8n': 'automation', 'Zapier': 'automation', 'Make': 'automation', 'Dify': 'automation',
     'ElevenLabs': 'voice', 'Whisper': 'voice',
 }
@@ -60,7 +63,7 @@ def get_distinct_tool_names() -> list[str]:
 
 
 def upsert_tool(name: str) -> None:
-    slug = name.lower().replace(' ', '-').replace('/', '-')
+    slug = TARGET_TOOL_SLUGS.get(name, name.lower().replace(' ', '-').replace('/', '-').replace('.', '-'))
     cat  = KNOWN_CATEGORIES.get(name, 'other')
     httpx.post(
         f'{URL}/rest/v1/tools',
@@ -83,15 +86,28 @@ def rescore(name: str) -> float:
 
 
 TARGET_TOOL_SLUGS: dict[str, str] = {
-    'Claude Code': 'claude-code',
-    'Cursor':      'cursor',
-    'Windsurf':    'windsurf',
-    'Trae':        'trae',
-    'Codex':       'codex',
-    'n8n':         'n8n',
-    'Make':        'make',
-    'Zapier':      'zapier',
-    'Dify':        'dify',
+    'Claude Code':   'claude-code',
+    'Cursor':        'cursor',
+    'Windsurf':      'windsurf',
+    'Trae':          'trae',
+    'Codex':         'codex',
+    'n8n':           'n8n',
+    'Make':          'make',
+    'Zapier':        'zapier',
+    'Dify':          'dify',
+    'Midjourney':    'midjourney',
+    'ComfyUI':       'comfyui',
+    'Adobe Firefly': 'adobe-firefly',
+    'Ideogram':      'ideogram',
+    'Leonardo AI':   'leonardo-ai',
+    'Seedance':      'seedance',
+    'Kling':         'kling',
+    'ChatGPT':       'chatgpt',
+    'Notion AI':     'notion-ai',
+    'Perplexity':    'perplexity',
+    'Grammarly':     'grammarly',
+    'Jasper':        'jasper',
+    'Copy.ai':       'copy-ai',
 }
 
 

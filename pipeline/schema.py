@@ -5,7 +5,16 @@ Defines the structured output format for community mention analysis.
 from typing import Literal
 
 # 追蹤的工具清單
-TARGET_TOOLS: set[str] = {"Claude Code", "Cursor", "Trae", "Windsurf", "Codex", "n8n", "Make", "Zapier", "Dify"}
+TARGET_TOOLS: set[str] = {
+    # Coding
+    "Claude Code", "Cursor", "Trae", "Windsurf", "Codex",
+    # Automation
+    "n8n", "Make", "Zapier", "Dify",
+    # Image / Video
+    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI", "Seedance", "Kling",
+    # Writing / General AI
+    "ChatGPT", "Notion AI", "Perplexity", "Grammarly", "Jasper", "Copy.ai",
+}
 
 EXTRACTION_SYSTEM_PROMPT = """You are an AI tool analyst. Extract structured information from community discussions about AI tools.
 
@@ -21,10 +30,10 @@ Output language rules (STRICTLY follow):
 
 Extraction rules:
 - Only extract information explicitly stated or strongly implied in the text
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify — or null if none match
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null if none match
 - If multiple target tools are discussed, pick the PRIMARY one being reviewed/compared
 - Keep use_cases and pain_points concise (max 10 Chinese characters each item)
-- If the text does not discuss one of the 5 target tools, return tool_name as null
+- If the text does not discuss one of the target tools, return tool_name as null
 - confidence: 0.9+ means the tool and sentiment are very clear"""
 
 EXTRACTION_USER_TEMPLATE = """分析以下社群討論，提取關於 AI 工具的結構化資料：
@@ -35,7 +44,7 @@ EXTRACTION_USER_TEMPLATE = """分析以下社群討論，提取關於 AI 工具�
 
 Return JSON matching this exact schema:
 {{
-  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | "n8n" | "Make" | "Zapier" | "Dify" | null,
+  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | "n8n" | "Make" | "Zapier" | "Dify" | "Midjourney" | "ComfyUI" | "Adobe Firefly" | "Ideogram" | "Leonardo AI" | "Seedance" | "Kling" | "ChatGPT" | "Notion AI" | "Perplexity" | "Grammarly" | "Jasper" | "Copy.ai" | null,
   "sentiment": "positive" | "negative" | "neutral" | "mixed" | null,
   "use_cases": string[],
   "pain_points": string[],
@@ -82,6 +91,43 @@ TOOL_NAME_ALIASES: dict[str, str] = {
     # Dify
     "dify.ai": "Dify",
     "dify llm": "Dify",
+    # ChatGPT
+    "gpt-4o": "ChatGPT",
+    "gpt-4": "ChatGPT",
+    "gpt4": "ChatGPT",
+    "chatgpt-4": "ChatGPT",
+    "openai chat": "ChatGPT",
+    # Notion AI
+    "notionai": "Notion AI",
+    "notion ai assistant": "Notion AI",
+    # Perplexity
+    "perplexity ai": "Perplexity",
+    # Midjourney
+    "mid journey": "Midjourney",
+    "midjourney ai": "Midjourney",
+    # ComfyUI
+    "comfy ui": "ComfyUI",
+    "comfyui workflow": "ComfyUI",
+    # Adobe Firefly
+    "firefly": "Adobe Firefly",
+    "adobe firefly ai": "Adobe Firefly",
+    # Ideogram
+    "ideogram ai": "Ideogram",
+    # Leonardo AI
+    "leonardo": "Leonardo AI",
+    "leonardoai": "Leonardo AI",
+    "leonardo.ai": "Leonardo AI",
+    # Kling / 可靈
+    "kling ai": "Kling",
+    "可靈": "Kling",
+    "keling": "Kling",
+    "kling video": "Kling",
+    # Jasper
+    "jasper ai": "Jasper",
+    "jasper.ai": "Jasper",
+    # Copy.ai
+    "copy ai": "Copy.ai",
+    "copyai": "Copy.ai",
 }
 
 
@@ -112,7 +158,7 @@ TOOL DISAMBIGUATION:
 - "Make" refers ONLY to the automation platform Make.com (formerly Integromat). Do NOT extract tool_name "Make" just because the English word "make" appears in the text. Only set tool_name "Make" when the text clearly discusses Make.com as an automation tool — e.g. mentions "make.com", "integromat", "Make scenario", "Make workflow", or explicitly names it as a no-code automation tool alongside Zapier/n8n.
 
 Rules:
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify — or null
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null
 - confidence 0.9+ = very clear signal that this is a genuine review with clear sentiment
 
 Return exactly: {"results": [ <N extraction objects in order> ]}"""
