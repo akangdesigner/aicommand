@@ -8,10 +8,15 @@ from typing import Literal
 TARGET_TOOLS: set[str] = {
     # Coding
     "Claude Code", "Cursor", "Trae", "Windsurf", "Codex",
+    "GitHub Copilot", "Replit", "Aider", "Cline", "Bolt", "Lovable", "Devin",
     # Automation
     "n8n", "Make", "Zapier", "Dify",
-    # Image / Video
-    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI", "Seedance", "Kling",
+    # Image
+    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI",
+    # Video
+    "Seedance", "Kling", "Runway", "Sora", "Pika", "Veo", "Hailuo",
+    # Voice
+    "ElevenLabs", "Suno", "Udio",
     # Writing / General AI
     "ChatGPT", "Notion AI", "Perplexity", "Grammarly", "Jasper", "Copy.ai",
 }
@@ -30,7 +35,7 @@ Output language rules (STRICTLY follow):
 
 Extraction rules:
 - Only extract information explicitly stated or strongly implied in the text
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null if none match
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, GitHub Copilot, Replit, Aider, Cline, Bolt, Lovable, Devin, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, Runway, Sora, Pika, Veo, Hailuo, ElevenLabs, Suno, Udio, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null if none match
 - If multiple target tools are discussed, pick the PRIMARY one being reviewed/compared
 - Keep use_cases and pain_points concise (max 10 Chinese characters each item)
 - If the text does not discuss one of the target tools, return tool_name as null
@@ -44,7 +49,7 @@ EXTRACTION_USER_TEMPLATE = """分析以下社群討論，提取關於 AI 工具�
 
 Return JSON matching this exact schema:
 {{
-  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | "n8n" | "Make" | "Zapier" | "Dify" | "Midjourney" | "ComfyUI" | "Adobe Firefly" | "Ideogram" | "Leonardo AI" | "Seedance" | "Kling" | "ChatGPT" | "Notion AI" | "Perplexity" | "Grammarly" | "Jasper" | "Copy.ai" | null,
+  "tool_name": "Claude Code" | "Cursor" | "Trae" | "Windsurf" | "Codex" | "GitHub Copilot" | "Replit" | "Aider" | "Cline" | "Bolt" | "Lovable" | "Devin" | "n8n" | "Make" | "Zapier" | "Dify" | "Midjourney" | "ComfyUI" | "Adobe Firefly" | "Ideogram" | "Leonardo AI" | "Seedance" | "Kling" | "Runway" | "Sora" | "Pika" | "Veo" | "Hailuo" | "ElevenLabs" | "Suno" | "Udio" | "ChatGPT" | "Notion AI" | "Perplexity" | "Grammarly" | "Jasper" | "Copy.ai" | null,
   "sentiment": "positive" | "negative" | "neutral" | "mixed" | null,
   "use_cases": string[],
   "pain_points": string[],
@@ -128,6 +133,64 @@ TOOL_NAME_ALIASES: dict[str, str] = {
     # Copy.ai
     "copy ai": "Copy.ai",
     "copyai": "Copy.ai",
+    # GitHub Copilot
+    "github copilot": "GitHub Copilot",
+    "gh copilot": "GitHub Copilot",
+    "copilot": "GitHub Copilot",
+    "copilot chat": "GitHub Copilot",
+    # Replit
+    "replit agent": "Replit",
+    "replit ai": "Replit",
+    "replit ghostwriter": "Replit",
+    # Aider
+    "aider chat": "Aider",
+    "aider ai": "Aider",
+    # Cline
+    "cline bot": "Cline",
+    "claude dev": "Cline",
+    "roo cline": "Cline",
+    # Bolt
+    "bolt.new": "Bolt",
+    "bolt new": "Bolt",
+    # Lovable
+    "lovable.dev": "Lovable",
+    "lovable ai": "Lovable",
+    "gpt engineer": "Lovable",
+    # Devin
+    "devin ai": "Devin",
+    "cognition devin": "Devin",
+    # Runway
+    "runway ml": "Runway",
+    "runwayml": "Runway",
+    "runway gen-3": "Runway",
+    "runway gen-4": "Runway",
+    "gen-3": "Runway",
+    # Sora
+    "openai sora": "Sora",
+    "sora 2": "Sora",
+    "sora ai": "Sora",
+    # Pika
+    "pika labs": "Pika",
+    "pika art": "Pika",
+    "pika ai": "Pika",
+    # Veo
+    "google veo": "Veo",
+    "veo 3": "Veo",
+    "veo3": "Veo",
+    # Hailuo
+    "hailuo ai": "Hailuo",
+    "minimax hailuo": "Hailuo",
+    "海螺": "Hailuo",
+    # ElevenLabs
+    "eleven labs": "ElevenLabs",
+    "11labs": "ElevenLabs",
+    "elevenlabs ai": "ElevenLabs",
+    # Suno
+    "suno ai": "Suno",
+    "suno.ai": "Suno",
+    # Udio
+    "udio ai": "Udio",
+    "udio.com": "Udio",
 }
 
 
@@ -158,7 +221,7 @@ TOOL DISAMBIGUATION:
 - "Make" refers ONLY to the automation platform Make.com (formerly Integromat). Do NOT extract tool_name "Make" just because the English word "make" appears in the text. Only set tool_name "Make" when the text clearly discusses Make.com as an automation tool — e.g. mentions "make.com", "integromat", "Make scenario", "Make workflow", or explicitly names it as a no-code automation tool alongside Zapier/n8n.
 
 Rules:
-- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null
+- tool_name must be one of: Claude Code, Cursor, Trae, Windsurf, Codex, GitHub Copilot, Replit, Aider, Cline, Bolt, Lovable, Devin, n8n, Make, Zapier, Dify, Midjourney, ComfyUI, Adobe Firefly, Ideogram, Leonardo AI, Seedance, Kling, Runway, Sora, Pika, Veo, Hailuo, ElevenLabs, Suno, Udio, ChatGPT, Notion AI, Perplexity, Grammarly, Jasper, Copy.ai — or null
 - confidence 0.9+ = very clear signal that this is a genuine review with clear sentiment
 
 Return exactly: {"results": [ <N extraction objects in order> ]}"""

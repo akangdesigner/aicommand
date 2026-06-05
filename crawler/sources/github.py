@@ -24,6 +24,9 @@ TARGET_REPOS = [
     ("openai",          "codex",        "Codex"),
     ("n8n-io",          "n8n",          "n8n"),
     ("langgenius",      "dify",         "Dify"),
+    ("Aider-AI",        "aider",        "Aider"),
+    ("cline",           "cline",        "Cline"),
+    ("stackblitz",      "bolt.new",     "Bolt"),
     # 圖像生成（有公開 Discussions 的 repo）
     ("comfyanonymous",  "ComfyUI",      "ComfyUI"),
     # 寫作

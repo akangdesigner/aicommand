@@ -18,6 +18,8 @@ MIN_COMMENT_LENGTH = 80
 HN_QUERIES = [
     # 程式開發
     "Claude AI", "Claude Code", "Cursor IDE", "GitHub Copilot",
+    "Replit agent", "Aider AI", "Cline VS Code", "Bolt.new",
+    "Lovable dev", "Devin AI engineer",
     "LLM coding", "AI coding tool", "vibe coding",
     "n8n automation", "n8n workflow",
     "Zapier automation", "Dify LLM",
@@ -29,7 +31,11 @@ HN_QUERIES = [
     "Leonardo AI image", "GPT Image OpenAI",
     # 影片生成
     "Kling AI video", "Seedance ByteDance video",
+    "Runway Gen-3 video", "OpenAI Sora", "Pika AI video",
+    "Google Veo", "Hailuo AI video",
     "AI video generation 2025",
+    # 語音
+    "ElevenLabs voice", "Suno AI music", "Udio AI music",
     # 寫作
     "ChatGPT writing", "Notion AI", "Perplexity AI search",
     "Grammarly AI", "Jasper AI writing", "Copy.ai marketing",
