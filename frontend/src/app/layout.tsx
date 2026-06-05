@@ -23,8 +23,14 @@ const notoSansTC = Noto_Sans_TC({
 
 const BASE_URL = 'https://aicommand.aiqkangber.com'
 
+// Google Search Console 驗證碼（在 Zeabur Variables 設定，免改 code）
+const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+  ...(GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: GOOGLE_SITE_VERIFICATION } }
+    : {}),
   title: {
     default: 'AICommand · AI 工具排行榜',
     template: '%s · AICommand',

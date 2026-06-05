@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 
 const BASE = 'https://aicommand.aiqkangber.com'
 
+// 每小時重新產生，讓新加入 DB 的工具自動進 sitemap（免重新 build）
+export const revalidate = 3600
+
 async function getToolSlugs(): Promise<string[]> {
   try {
     const sb = createClient(
