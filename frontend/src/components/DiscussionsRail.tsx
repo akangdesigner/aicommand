@@ -12,6 +12,16 @@ const SOURCE_LABELS: Record<string, string> = {
   threads: 'Threads',
 }
 
+// favicon 用的實際網域（PTT 是 .cc、Dcard 是 .tw、Threads 是 .net，不能一律補 .com）
+const SOURCE_DOMAINS: Record<string, string> = {
+  reddit: 'reddit.com',
+  hn: 'news.ycombinator.com',
+  github: 'github.com',
+  ptt: 'ptt.cc',
+  dcard: 'dcard.tw',
+  threads: 'threads.net',
+}
+
 const SENTIMENT_STYLE = {
   positive: { bg: 'oklch(0.95 0.05 145)', fg: 'oklch(0.38 0.14 145)', label: '正面' },
   negative: { bg: 'oklch(0.95 0.05 25)',  fg: 'oklch(0.42 0.17 25)',  label: '負面' },
@@ -30,6 +40,7 @@ const FALLBACK: RecentDiscussion[] = [
 function DiscussionCard({ d }: { d: RecentDiscussion }) {
   const s = SENTIMENT_STYLE[d.sentiment] ?? SENTIMENT_STYLE.mixed
   const label = SOURCE_LABELS[d.source] ?? d.source
+  const faviconDomain = SOURCE_DOMAINS[d.source] ?? `${d.source}.com`
 
   const inner = (
     <div className="flex h-full w-[300px] shrink-0 flex-col gap-3 rounded-xl border border-stone-200 bg-white p-4">
@@ -40,8 +51,8 @@ function DiscussionCard({ d }: { d: RecentDiscussion }) {
             <span className="rounded-full bg-stone-800 px-1.5 py-0.5 text-[9px] font-medium text-white">本站</span>
           ) : (
             <img
-              src={`https://www.google.com/s2/favicons?domain=${d.source === 'hn' ? 'news.ycombinator.com' : d.source + '.com'}&sz=32`}
-              width={12} height={12} alt=""
+              src={`https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=32`}
+              width={12} height={12} alt={`${label} logo`}
               className="h-3 w-3 object-contain opacity-60"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
             />
