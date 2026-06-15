@@ -52,13 +52,13 @@ export const metadata: Metadata = {
     siteName: 'AICommand',
     title: 'AICommand · AI 工具排行榜',
     description: '從真實社群討論分析 AI 工具排名，每週更新，不是廠商買位。',
-    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'AICommand AI 工具排行榜' }],
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'AICommand AI 工具排行榜' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AICommand · AI 工具排行榜',
     description: '從真實社群討論分析 AI 工具排名，每週更新。',
-    images: ['/og-default.png'],
+    images: ['/og'],
   },
   alternates: {
     canonical: BASE_URL,

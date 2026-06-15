@@ -21,7 +21,7 @@ export default function GlossaryPage() {
     name: 'AICommand AI 工具名詞大補帖',
     description: 'AI 開發工具常見術語指南，涵蓋工作方式、工具類型、AI 概念、主流模型、定價模式與工具選型六大分類。',
     url: 'https://aicommand.aiqkangber.com/glossary',
-    definedTerm: allEntries.map((e) => ({
+    hasDefinedTerm: allEntries.map((e) => ({
       '@type': 'DefinedTerm',
       name: e.term,
       description: e.body,

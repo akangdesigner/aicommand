@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Tool, SortKey, SortOption } from '@/lib/data'
 import { cx } from '@/lib/utils'
@@ -198,9 +199,9 @@ function VibeSearch({ tools }: { tools: Tool[] }) {
               {matchedTools.length > 0 && (
                 <div className="space-y-2.5">
                   {matchedTools.map(({ result, tool }, index) => (
-                    <button
+                    <Link
                       key={tool.slug}
-                      onClick={() => router.push(`/tools/${tool.slug}`)}
+                      href={`/tools/${tool.slug}`}
                       className="group relative flex w-full gap-3 overflow-hidden rounded-xl border border-stone-200 bg-white p-4 text-left transition hover:border-stone-300 hover:shadow-sm"
                     >
                       <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl" style={{ background: tool.accent }} />
@@ -239,7 +240,7 @@ function VibeSearch({ tools }: { tools: Tool[] }) {
                           )}
                         </div>
                       </div>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -333,7 +334,6 @@ function OfficialLink({ url, className }: { url: string; className?: string }) {
 }
 
 function FeaturedCard({ tool }: { tool: Tool }) {
-  const router = useRouter()
   const rankDelta = tool.prevRank - tool.rank
   const rankLabel =
     tool.rank === 1
@@ -345,10 +345,12 @@ function FeaturedCard({ tool }: { tool: Tool }) {
       : `持平 #${tool.prevRank}`
 
   return (
-    <button
-      onClick={() => router.push(`/tools/${tool.slug}`)}
-      className="group relative flex h-full w-full flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-5 text-left transition hover:border-stone-300 hover:shadow-[0_8px_24px_-12px_rgba(15,15,15,0.12)]"
-    >
+    <div className="group relative flex h-full w-full flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-5 text-left transition hover:border-stone-300 hover:shadow-[0_8px_24px_-12px_rgba(15,15,15,0.12)]">
+      <Link
+        href={`/tools/${tool.slug}`}
+        aria-label={`查看 ${tool.name} 的社群評價與排名`}
+        className="absolute inset-0 z-0 rounded-2xl"
+      />
       <div className="absolute -top-3 left-5">
         <div
           className="flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold tracking-[0.02em]"
@@ -387,7 +389,7 @@ function FeaturedCard({ tool }: { tool: Tool }) {
               <ScoreNumber value={tool.score} size="lg" />
             </div>
           )}
-          {tool.website && <OfficialLink url={tool.website} />}
+          {tool.website && <OfficialLink url={tool.website} className="relative z-10" />}
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {tool.delta !== 0 && <TrendArrow delta={tool.delta} size="lg" />}
@@ -396,17 +398,18 @@ function FeaturedCard({ tool }: { tool: Tool }) {
           </div>
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 
 function CompactRow({ tool }: { tool: Tool }) {
-  const router = useRouter()
   return (
-    <button
-      onClick={() => router.push(`/tools/${tool.slug}`)}
-      className="group grid w-full grid-cols-[44px_44px_1fr_auto] items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left transition last:border-b-0 hover:bg-stone-50 sm:grid-cols-[48px_40px_1fr_96px_72px_72px_80px] sm:gap-4 sm:px-6"
-    >
+    <div className="group relative grid w-full grid-cols-[44px_44px_1fr_auto] items-center gap-3 border-b border-stone-100 px-4 py-3.5 text-left transition last:border-b-0 hover:bg-stone-50 sm:grid-cols-[48px_40px_1fr_96px_72px_72px_80px] sm:gap-4 sm:px-6">
+      <Link
+        href={`/tools/${tool.slug}`}
+        aria-label={`查看 ${tool.name} 的社群評價與排名`}
+        className="absolute inset-0 z-0"
+      />
       {/* 排名 */}
       <RankPill rank={tool.rank} />
 
@@ -447,7 +450,7 @@ function CompactRow({ tool }: { tool: Tool }) {
       {/* 官網連結 */}
       <div className="hidden sm:flex items-center justify-end">
         {tool.website
-          ? <OfficialLink url={tool.website} />
+          ? <OfficialLink url={tool.website} className="relative z-10" />
           : <span className="text-[12px] text-stone-300">—</span>
         }
       </div>
@@ -456,7 +459,7 @@ function CompactRow({ tool }: { tool: Tool }) {
       {tool.score > 0 && (
         <span className="sm:hidden font-mono text-[12px] tabular-nums text-stone-700">{tool.score.toFixed(1)}</span>
       )}
-    </button>
+    </div>
   )
 }
 

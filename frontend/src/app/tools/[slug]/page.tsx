@@ -56,31 +56,52 @@ export function generateStaticParams() {
   return TOOLS.map((t) => ({ slug: t.slug }))
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const config = TOOLS.find((t) => t.slug === params.slug)
-  const base = 'https://aicommand.aiqkangber.com'
+const BASE = 'https://aicommand.aiqkangber.com'
 
-  if (config) return {
-    title: `${config.name} 評測、評價、社群口碑`,
-    description: `${config.name} 的真實社群評價、熱度分數、使用心得與競品比較，資料來自 Reddit、HN、PTT、Dcard。${config.description}`,
-    alternates: { canonical: `${base}/tools/${config.slug}` },
+// 確保 meta description 夠長（Ahrefs 門檻約 110 字元），避免「Meta description too short」
+function buildToolDescription(name: string, extra?: string | null): string {
+  const core = `${name} 的真實社群評價與熱度排名：彙整 Reddit、Hacker News、PTT、Dcard 的討論，分析使用心得、優缺點、定價友善度與競品比較，每週依社群聲量自動更新，不是廠商買位。`
+  return extra ? `${core}${extra}` : core
+}
+
+// 完整 Open Graph + Twitter，避免「Open Graph tags incomplete」
+function buildToolMetadata(name: string, slug: string, extra?: string | null): Metadata {
+  const url = `${BASE}/tools/${slug}`
+  const description = buildToolDescription(name, extra)
+  const ogImage = `${BASE}/og?title=${encodeURIComponent(name)}`
+  return {
+    title: `${name} 評測、評價、社群口碑`,
+    description,
+    alternates: { canonical: url },
     openGraph: {
-      title: `${config.name} · AICommand`,
-      description: `${config.name} 社群口碑、熱度分數與使用者評價`,
-      url: `${base}/tools/${config.slug}`,
+      type: 'article',
+      locale: 'zh_TW',
+      siteName: 'AICommand',
+      title: `${name} · AICommand`,
+      description: `${name} 社群口碑、熱度分數與使用者評價，資料來自 Reddit、HN、PTT、Dcard。`,
+      url,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `${name} · AICommand` }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name} · AICommand`,
+      description: `${name} 社群口碑、熱度分數與使用者評價`,
+      images: [ogImage],
     },
   }
+}
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const config = TOOLS.find((t) => t.slug === params.slug)
+
+  if (config) return buildToolMetadata(config.name, config.slug, config.description)
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (url && key) {
     const { data } = await createClient(url, key)
       .from('tools').select('name, description, slug').eq('slug', params.slug).single()
-    if (data) return {
-      title: `${data.name} 評測、評價、社群口碑`,
-      description: `${data.name} 的真實社群評價與熱度分數。${data.description ?? ''}`,
-      alternates: { canonical: `${base}/tools/${data.slug}` },
-    }
+    if (data) return buildToolMetadata(data.name, data.slug, data.description)
   }
   return {}
 }
