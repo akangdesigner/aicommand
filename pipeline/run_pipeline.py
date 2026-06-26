@@ -24,27 +24,48 @@ HEADERS = {
 }
 
 TOOL_KEYWORDS = {
+    # 程式開發
     "Claude Code":   ["Claude Code"],
     "Cursor":        ["Cursor"],
     "Trae":          ["Trae"],
     "Windsurf":      ["Windsurf"],
-    "Codex":         ["Codex"],
+    "Codex":         ["Codex", "openai codex"],
+    "GitHub Copilot":["GitHub Copilot", "copilot"],
+    "Replit":        ["Replit"],
+    "Aider":         ["Aider", "aider.chat"],
+    "Cline":         ["Cline", "cline.bot"],
+    "Bolt":          ["Bolt", "bolt.new"],
+    "Lovable":       ["Lovable", "lovable.dev"],
+    "Devin":         ["Devin", "devin.ai"],
+    # 自動化
     "n8n":           ["n8n"],
-    "Make":          ["make.com", "Integromat"],
+    "Make":          ["make.com", "Integromat", "Make automation"],
     "Zapier":        ["Zapier"],
     "Dify":          ["Dify"],
+    # 圖像生成
     "Midjourney":    ["Midjourney", "mid journey"],
     "ComfyUI":       ["ComfyUI", "comfy ui"],
     "Adobe Firefly": ["Adobe Firefly", "Firefly"],
     "Ideogram":      ["Ideogram"],
     "Leonardo AI":   ["Leonardo AI", "Leonardo"],
+    # 影片生成
     "Seedance":      ["Seedance"],
     "Kling":         ["Kling", "可靈", "keling"],
+    "Runway":        ["Runway", "runwayml"],
+    "Sora":          ["Sora", "openai sora"],
+    "Pika":          ["Pika", "pika.art"],
+    "Veo":           ["Veo", "google veo"],
+    "Hailuo":        ["Hailuo", "海螺", "minimax video"],
+    # 語音
+    "ElevenLabs":    ["ElevenLabs", "eleven labs"],
+    "Suno":          ["Suno", "suno.com"],
+    "Udio":          ["Udio", "udio.com"],
+    # 寫作
     "ChatGPT":       ["ChatGPT", "gpt-4o", "gpt-4"],
     "Notion AI":     ["Notion AI"],
     "Perplexity":    ["Perplexity"],
     "Grammarly":     ["Grammarly"],
-    "Jasper":        ["Jasper"],
+    "Jasper":        ["Jasper", "jasper.ai"],
     "Copy.ai":       ["Copy.ai", "copyai"],
 }
 

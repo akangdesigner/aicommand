@@ -318,11 +318,48 @@ export default async function ToolPage({ params }: { params: { slug: string } })
 
   // 定價友善度（人工設定，100 = 完全免費，0 = 非常昂貴）
   const PRICING_SCORES: Record<string, number> = {
-    'trae':        100,  // 完全免費（ByteDance 補貼）
-    'windsurf':    75,   // 有免費方案，付費 $15/mo
-    'cursor':      65,   // 有免費方案，付費 $20/mo
-    'codex':       50,   // OpenAI API pay-per-use，用量難預期
-    'claude-code': 35,   // 需要 Claude Pro $20+，agent 模式用量高
+    // 程式開發
+    'trae':           100, // 完全免費（ByteDance 補貼）
+    'aider':           95, // 開源免費，自備 API key 即可
+    'cline':           90, // 開源免費，自備 API key
+    'comfyui':         85, // 本地自架免費，Desktop $49 買斷
+    'github-copilot':  72, // 免費版含補全，Pro $10/mo
+    'replit':          68, // 免費方案夠用，付費 $25/mo
+    'windsurf':        75, // 有免費方案，付費 $15/mo
+    'bolt':            65, // 有免費每日額度，付費 $20/mo
+    'cursor':          65, // 有免費方案，付費 $20/mo
+    'lovable':         55, // 免費訊息有限，付費 $25/mo
+    'codex':           50, // OpenAI API 按量，用量難預期
+    'claude-code':     35, // 需要 Claude Pro $20+，agent 用量高
+    'devin':           15, // $500/mo 起，極度昂貴
+    // 自動化
+    'dify':            85, // 自架完全免費，雲端 $59/mo
+    'n8n':             82, // 自架免費，雲端 $20/mo
+    'make':            72, // 免費 1,000 ops，付費 $9/mo 起
+    'zapier':          55, // 免費 100 tasks/月，很快超出
+    // 圖像生成
+    'ideogram':        74, // 免費 10 prompts/天，付費 $7/mo
+    'leonardo-ai':     70, // 免費 150 credits/天
+    'hailuo':          68, // 免費每日額度
+    'pika':            68, // 免費有基礎點數
+    'adobe-firefly':   55, // 免費限量，付費 $10/mo 起
+    'seedance':        62, // CapCut 免費層可用
+    'kling':           60, // 免費有限次數
+    'gpt-image':       58, // 隨 ChatGPT Plus $20/mo
+    'sora':            45, // 需要 ChatGPT Plus $20/mo
+    'runway':          50, // 免費很少，付費 $15/mo
+    'midjourney':      38, // 無免費方案，$10/mo 起
+    // 寫作
+    'grammarly':       68, // 免費版夠用，Pro $12/mo
+    'perplexity':      62, // 免費 5 次 Pro Search/天
+    'chatgpt':         60, // 免費版 + Plus $20/mo
+    'notion-ai':       45, // 需額外付 $10/mo
+    'copy-ai':         48, // 免費 2000 字，付費 $49/mo
+    'jasper':          22, // 無免費版，$49/mo 起
+    // 語音
+    'suno':            72, // 免費每日額度，$10 Pro
+    'udio':            70, // 免費每月額度，$10/mo
+    'elevenlabs':      68, // 免費有限，$5/mo 起
   }
   const pricingScore = PRICING_SCORES[slug] ?? 50
 

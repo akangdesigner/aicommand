@@ -78,6 +78,25 @@ export async function POST(req: NextRequest) {
     const results = await groqSearch(trimmed)
     return NextResponse.json({ results })
   } catch {
+    // Groq 不可用時，退回 keyword 比對
+    const tokens = trimmed.toLowerCase().split(/[\s，、,]+/).filter(Boolean)
+    const scored = TOOLS
+      .map((t) => ({ tool: t, score: keywordScore(t, tokens) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+
+    if (scored.length > 0) {
+      return NextResponse.json({
+        results: scored.map(({ tool }) => ({
+          slug: tool.slug,
+          name: tool.name,
+          reason: tool.description,
+          highlights: (tool.features ?? []).slice(0, 2),
+        })),
+      })
+    }
+
     return NextResponse.json({ error: 'ai_unavailable', results: [] })
   }
 }

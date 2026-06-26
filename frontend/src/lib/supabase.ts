@@ -83,7 +83,6 @@ export async function getToolsForHomePage(): Promise<Tool[]> {
     if (trendsRes.error) console.error('[supabase] tool_weekly_trends error:', trendsRes.error)
     data = toolsRes.data
     weeklyRows = (trendsRes.data ?? []) as typeof weeklyRows
-    console.log('[supabase] weeklyRows count:', weeklyRows.length)
   } catch (err) {
     console.error('[supabase] getToolsForHomePage error:', err)
     return TOOLS

@@ -1,27 +1,41 @@
 """
-Threads crawler using official Threads API (keyword_search endpoint).
-Requires THREADS_ACCESS_TOKEN in .env (threads_basic + threads_keyword_search permissions).
-API docs: https://developers.facebook.com/docs/threads/keyword-search/
+Threads crawler via Apify igview-owner/threads-search-scraper (actor: FP43CZrdHtiSNn4SY).
+Requires APIFY_TOKEN in .env.
+
+Input schema:
+  searchQuery  string   required  — 搜尋關鍵字
+  sort         string   "recent"  — "top" | "recent"
+  maxPosts     int      50        — 每個關鍵字最多幾筆（20–1000）
+
+Output 關鍵欄位:
+  caption / text_content  — 貼文內容
+  thread_id               — post ID
+  thread_url              — 永久連結
+  user.username           — 作者
+  timestamp               — ISO 8601
 """
 import hashlib
 import os
+import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
 
 import httpx
 
 from crawler.filter import is_genuine_review
 
-API_BASE = "https://graph.threads.net/v1.0"
+APIFY_BASE = "https://api.apify.com/v2"
+ACTOR_ID = "FP43CZrdHtiSNn4SY"
+
 KEYWORDS = [
-    "Claude Code", "Cursor", "Windsurf", "Trae", "Codex",
-    "n8n", "Zapier", "make.com", "Dify",
-    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram", "Leonardo AI",
-    "Seedance", "可靈", "Kling",
-    "ChatGPT", "Notion AI", "Perplexity", "Grammarly",
+    "Claude Code", "Cursor AI", "Windsurf IDE", "Trae AI", "Codex OpenAI",
+    "n8n workflow", "Zapier automation", "Make.com", "Dify AI",
+    "Midjourney", "ComfyUI", "Adobe Firefly", "Ideogram AI", "Leonardo AI",
+    "Seedance AI", "可靈 Kling", "Kling video",
+    "ChatGPT", "Notion AI", "Perplexity AI", "Grammarly",
+    "ElevenLabs", "GitHub Copilot",
 ]
-THREE_MONTHS_AGO = datetime.now(timezone.utc) - timedelta(days=90)
-FIELDS = "id,text,media_type,permalink,timestamp,username"
+
+MAX_POSTS_PER_KW = 50
 
 
 @dataclass
@@ -37,96 +51,96 @@ def _hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def _extract_text(item: dict) -> str:
+    # 實際欄位名稱依 API 回傳確認
+    for key in ("captionText", "caption", "text_content", "text", "content"):
+        v = item.get(key, "")
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return ""
+
+
 def search_keyword(client: httpx.Client, token: str, keyword: str) -> list[RawMention]:
+    """執行單一關鍵字搜尋，同步等待結果。"""
+    try:
+        resp = client.post(
+            f"{APIFY_BASE}/acts/{ACTOR_ID}/run-sync-get-dataset-items",
+            params={"token": token, "timeout": 120, "memory": 256},
+            json={
+                "searchQuery": keyword,
+                "sort": "recent",
+                "maxPosts": MAX_POSTS_PER_KW,
+            },
+            timeout=130,
+        )
+        resp.raise_for_status()
+        items = resp.json()
+        if not isinstance(items, list):
+            return []
+    except Exception as e:
+        print(f"  Apify error [{keyword}]: {e}")
+        return []
+
     mentions: list[RawMention] = []
     seen: set[str] = set()
-    after: str | None = None
 
-    for _page in range(5):  # 最多翻 5 頁
-        params: dict = {
-            "q": keyword,
-            "search_type": "RECENT",
-            "limit": 50,
-            "fields": FIELDS,
-            "access_token": token,
-        }
-        if after:
-            params["after"] = after
+    for item in items:
+        text = _extract_text(item)
+        if not text or not is_genuine_review(text, min_len=30):
+            continue
 
-        try:
-            resp = client.get(f"{API_BASE}/keyword_search", params=params, timeout=20)
-            resp.raise_for_status()
-            body = resp.json()
-            data = body.get("data", [])
-            after = body.get("paging", {}).get("cursors", {}).get("after")
-        except Exception as e:
-            print(f"  Threads API error [{keyword}]: {e}")
-            break
+        content_hash = _hash(text)
+        if content_hash in seen:
+            continue
+        seen.add(content_hash)
 
-        for post in data:
-            post_id = post.get("id", "")
-            text = (post.get("text") or "").strip()
-            permalink = post.get("permalink", "")
-            timestamp = post.get("timestamp", "")
-            username = post.get("username", "")
+        thread_id = str(item.get("postId") or item.get("thread_id") or item.get("post_id") or "")
+        url = item.get("postUrl") or item.get("thread_url") or item.get("url") or ""
+        # username 直接在 item 上（不是巢狀 user 物件）
+        username = item.get("username") or ""
+        if not username:
+            user = item.get("user") or {}
+            username = user.get("username", "") if isinstance(user, dict) else ""
+        timestamp = item.get("takenAtISO") or item.get("timestamp") or item.get("created_at") or ""
 
-            if not text or len(text) < 20 or post_id in seen:
-                continue
-
-            if timestamp:
-                try:
-                    dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-                    if dt < THREE_MONTHS_AGO:
-                        continue
-                except Exception:
-                    pass
-
-            # Threads 貼文本來就短，不用 is_genuine_review 的長度門檻
-            if not is_genuine_review(text, min_len=30):
-                continue
-
-            seen.add(post_id)
-            mentions.append(RawMention(
-                source_id=f"threads_{post_id}",
-                content=text,
-                metadata={
-                    "title": text[:60],
-                    "author": username,
-                    "url": permalink,
-                    "created_at": timestamp,
-                    "source": "threads",
-                    "type": "post",
-                },
-                content_hash=_hash(text),
-            ))
-
-        if not after or not data:
-            break
+        mentions.append(RawMention(
+            source_id=f"threads_{thread_id}" if thread_id else f"threads_{content_hash[:16]}",
+            content=text,
+            metadata={
+                "title": text[:60],
+                "author": username or "",
+                "url": url,
+                "created_at": timestamp,
+                "source": "threads",
+                "type": "post",
+            },
+            content_hash=content_hash,
+        ))
 
     return mentions
 
 
 def run_full_crawl() -> list[RawMention]:
-    token = os.environ.get("THREADS_ACCESS_TOKEN", "")
+    token = os.environ.get("APIFY_TOKEN", "")
     if not token:
-        print("  Threads: 缺少 THREADS_ACCESS_TOKEN，略過")
+        print("  Threads (Apify): 缺少 APIFY_TOKEN，略過")
         return []
 
-    mentions: list[RawMention] = []
-    with httpx.Client(timeout=20) as client:
-        for kw in KEYWORDS:
-            print(f"Threads [{kw}]...")
-            results = search_keyword(client, token, kw)
-            mentions.extend(results)
-            print(f"  → {len(results)} 筆")
-
-    # Deduplicate
+    all_mentions: list[RawMention] = []
     seen_hashes: set[str] = set()
-    unique = []
-    for m in mentions:
-        if m.content_hash not in seen_hashes:
-            seen_hashes.add(m.content_hash)
-            unique.append(m)
 
-    print(f"Threads total unique: {len(unique)}")
-    return unique
+    with httpx.Client(timeout=140) as client:
+        for kw in KEYWORDS:
+            print(f"  Threads [{kw}]...", end=" ", flush=True)
+            results = search_keyword(client, token, kw)
+            # 跨關鍵字去重
+            unique = [m for m in results if m.content_hash not in seen_hashes]
+            for m in unique:
+                seen_hashes.add(m.content_hash)
+            all_mentions.extend(unique)
+            print(f"{len(unique)} 筆（raw {len(results)}）")
+            # 避免打太快被 rate limit
+            time.sleep(1)
+
+    print(f"Threads/Apify total unique: {len(all_mentions)}")
+    return all_mentions

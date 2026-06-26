@@ -29,7 +29,10 @@ function TrendChart({ data, accent }: { data: number[]; accent: string }) {
     v: min + (range * i) / ticks,
     y: padT + innerH - (i / ticks) * innerH,
   }))
-  const weeks = ['−7週', '−6週', '−5週', '−4週', '−3週', '−2週', '−1週', '本週']
+  const weeks = Array.from({ length: data.length }, (_, i) => {
+    const n = data.length - 1 - i
+    return n === 0 ? '本週' : `−${n}週`
+  })
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-auto">
