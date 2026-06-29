@@ -4,11 +4,11 @@ import { createClient } from '@supabase/supabase-js'
 
 export const metadata: Metadata = {
   title: 'AI 工具最新消息',
-  description: '每 12 小時自動更新的 AI 開發工具新聞，涵蓋 AI IDE、Coding Agent、圖像生成、自動化工具的最新動態，來自各大科技媒體。',
+  description: '每 6 小時自動更新的 AI 開發工具新聞，涵蓋 AI IDE、Coding Agent、圖像生成、自動化工具的最新動態，來自各大科技媒體。',
   alternates: { canonical: 'https://aicommand.aiqkangber.com/news' },
   openGraph: {
     title: 'AI 工具最新消息 · AICommand',
-    description: '每 12 小時自動更新，AI 開發工具相關新聞一站掌握。',
+    description: '每 6 小時自動更新，AI 開發工具相關新聞一站掌握。',
   },
 }
 

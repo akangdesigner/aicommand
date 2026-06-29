@@ -61,7 +61,7 @@ const BASE = 'https://aicommand.aiqkangber.com'
 
 // 確保 meta description 夠長（Ahrefs 門檻約 110 字元），避免「Meta description too short」
 function buildToolDescription(name: string, extra?: string | null): string {
-  const core = `${name} 的真實社群評價與熱度排名：彙整 Reddit、Hacker News、PTT、Dcard 的討論，分析使用心得、優缺點、定價友善度與競品比較，每週依社群聲量自動更新，不是廠商買位。`
+  const core = `${name} 的真實社群評價與熱度排名：彙整 Hacker News、PTT、Dcard、Threads 的討論，分析使用心得、優缺點、定價友善度與競品比較，定期依社群聲量更新，不是廠商買位。`
   return extra ? `${core}${extra}` : core
 }
 

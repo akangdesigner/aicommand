@@ -11,7 +11,7 @@ const SOURCES = [
 ]
 
 const SCORE_STEPS = [
-  { step: '01', title: '爬蟲抓取', desc: '每週定期從 HN、GitHub、PTT、Dcard、Threads 抓取含工具名稱的社群貼文與留言。' },
+  { step: '01', title: '爬蟲抓取', desc: '定期從 HN、GitHub、PTT、Dcard、Threads 抓取含工具名稱的社群貼文與留言。' },
   { step: '02', title: 'AI 分析', desc: '每個工具隨機抽 30 則送 Groq LLM 分析，抽取情緒傾向（正面／負面／中立）、使用場景、痛點、族群。' },
   { step: '03', title: '分數計算', desc: '依 HN 演算法精神：提及數 × 情緒權重 × 近期熱度加成，再 normalize 成 0–100 的熱度分數。' },
   { step: '04', title: '每週快照', desc: '每次跑完都存一筆週紀錄，趨勢線顯示工具的社群熱度走向。' },
@@ -30,7 +30,7 @@ export function AboutPage() {
           </h1>
           <p className="max-w-[560px] text-[15px] leading-relaxed text-stone-600">
             AICommand 不靠廠商贊助、不靠人工評測。所有排名來自爬蟲抓取的社群真實討論，
-            再由 AI 分析情緒與話題深度，產出每週更新的熱度分數。
+            再由 AI 分析情緒與話題深度，產出定期更新的熱度分數。
           </p>
         </div>
       </header>
@@ -104,7 +104,7 @@ export function AboutPage() {
               <div className="mb-3 text-[22px]">📰</div>
               <div className="mb-1.5 font-semibold text-stone-900 group-hover:text-stone-700">AI 工具新聞追蹤</div>
               <p className="text-[13.5px] leading-relaxed text-stone-500">
-                每 12 小時從 Google News 自動抓取 AI 開發工具相關新聞，涵蓋 IDE、Agent、圖像生成、自動化等各類工具的最新動態。不用追蹤十幾個媒體，開這頁就好。
+                每 6 小時從 Google News 自動抓取 AI 開發工具相關新聞，涵蓋 IDE、Agent、圖像生成、自動化等各類工具的最新動態。不用追蹤十幾個媒體，開這頁就好。
               </p>
               <div className="mt-4 text-[12.5px] font-medium text-stone-400 group-hover:text-stone-600 transition">
                 查看最新動態 →
