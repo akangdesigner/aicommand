@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { getIndexableToolSlugs } from '@/lib/toolIndex'
 
 const BASE = 'https://aicommand.aiqkangber.com'
 
@@ -8,12 +8,8 @@ export const revalidate = 3600
 
 async function getToolSlugs(): Promise<string[]> {
   try {
-    const sb = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
-    )
-    const { data } = await sb.from('tools').select('slug').order('heat_score', { ascending: false })
-    return (data ?? []).map((r: { slug: string }) => r.slug).filter(Boolean)
+    // 只收錄評論數達門檻的工具，薄頁不進 sitemap（E-E-A-T）
+    return await getIndexableToolSlugs()
   } catch {
     return []
   }

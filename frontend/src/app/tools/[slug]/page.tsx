@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { TOOLS } from '@/lib/data'
 import { DetailPageClient } from '@/components/DetailPage'
+import { getToolCommentCount, isToolIndexable } from '@/lib/toolIndex'
 import type { Tool, Quote, Competitor, Sentiment } from '@/lib/data'
 
 export const dynamic = 'force-dynamic'
@@ -65,7 +66,8 @@ function buildToolDescription(name: string, extra?: string | null): string {
 }
 
 // 完整 Open Graph + Twitter，避免「Open Graph tags incomplete」
-function buildToolMetadata(name: string, slug: string, extra?: string | null): Metadata {
+// indexable=false（評論數不足）→ noindex,follow，避免薄內容被索引（E-E-A-T）
+function buildToolMetadata(name: string, slug: string, extra?: string | null, indexable = true): Metadata {
   const url = `${BASE}/tools/${slug}`
   const description = buildToolDescription(name, extra)
   const ogImage = `${BASE}/og?title=${encodeURIComponent(name)}`
@@ -73,6 +75,7 @@ function buildToolMetadata(name: string, slug: string, extra?: string | null): M
     title: `${name} 評測、評價、社群口碑`,
     description,
     alternates: { canonical: url },
+    robots: indexable ? undefined : { index: false, follow: true },
     openGraph: {
       type: 'article',
       locale: 'zh_TW',
@@ -94,14 +97,21 @@ function buildToolMetadata(name: string, slug: string, extra?: string | null): M
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const config = TOOLS.find((t) => t.slug === params.slug)
 
-  if (config) return buildToolMetadata(config.name, config.slug, config.description)
+  if (config) {
+    // 評論數不足的薄頁 → noindex，避免拖累站點 E-E-A-T
+    const indexable = isToolIndexable(await getToolCommentCount(config.name))
+    return buildToolMetadata(config.name, config.slug, config.description, indexable)
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (url && key) {
     const { data } = await createClient(url, key)
       .from('tools').select('name, description, slug').eq('slug', params.slug).single()
-    if (data) return buildToolMetadata(data.name, data.slug, data.description)
+    if (data) {
+      const indexable = isToolIndexable(await getToolCommentCount(data.name))
+      return buildToolMetadata(data.name, data.slug, data.description, indexable)
+    }
   }
   return {}
 }
